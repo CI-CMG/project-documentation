@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MvtLayerBuild.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:mapbox-vector-tile</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.mvt.build</a> &gt; <span class="el_source">MvtLayerBuild.java</span></div><h1>MvtLayerBuild.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.mvt.build;
+
+import edu.colorado.cires.cmg.mvt.VectorTile;
+import edu.colorado.cires.cmg.mvt.encoding.MvtValue;
+
+/**
+ * Utility methods for building Mapbox-Vector-Tile layers.
+ */
+<span class="nc" id="L9">public final class MvtLayerBuild {</span>
+
+    /**
+     * Create a new {@link VectorTile.Tile.Layer.Builder} instance with
+     * initialized version, name, and extent metadata.
+     *
+     * @param layerName name of the layer
+     * @param mvtLayerParams tile creation parameters
+     * @return new layer builder instance with initialized metadata.
+     */
+    public static VectorTile.Tile.Layer.Builder newLayerBuilder(String layerName,
+                                                                MvtLayerParams mvtLayerParams) {
+<span class="fc" id="L21">        final VectorTile.Tile.Layer.Builder layerBuilder = VectorTile.Tile.Layer.newBuilder();</span>
+<span class="fc" id="L22">        layerBuilder.setVersion(2);</span>
+<span class="fc" id="L23">        layerBuilder.setName(layerName);</span>
+<span class="fc" id="L24">        layerBuilder.setExtent(mvtLayerParams.extent);</span>
+
+<span class="fc" id="L26">        return layerBuilder;</span>
+    }
+
+    /**
+     * Modifies {@code layerBuilder} to contain properties from {@code layerProps}.
+     *
+     * @param layerBuilder layer builder to write to
+     * @param layerProps properties to write
+     */
+    public static void writeProps(VectorTile.Tile.Layer.Builder layerBuilder,
+                                  MvtLayerProps layerProps) {
+
+        // Add keys
+<span class="fc" id="L39">        layerBuilder.addAllKeys(layerProps.getKeys());</span>
+
+        // Add values
+<span class="fc" id="L42">        final Iterable&lt;Object&gt; vals = layerProps.getVals();</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        for (Object val : vals) {</span>
+<span class="fc" id="L44">            layerBuilder.addValues(MvtValue.toValue(val));</span>
+<span class="fc" id="L45">        }</span>
+<span class="fc" id="L46">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
