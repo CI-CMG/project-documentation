@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GeoJsonMultiLineProcessor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:trackline-simplifier</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.tracklinegen</a> &gt; <span class="el_source">GeoJsonMultiLineProcessor.java</span></div><h1>GeoJsonMultiLineProcessor.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.tracklinegen;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
+public class GeoJsonMultiLineProcessor {
+
+  private final ObjectMapper objectMapper;
+  private final int geoJsonPrecision;
+  private final double maxAllowedSpeedKnts;
+
+<span class="fc" id="L20">  public GeoJsonMultiLineProcessor(ObjectMapper objectMapper, int geoJsonPrecision, double maxAllowedSpeedKnts) {</span>
+<span class="fc" id="L21">    this.objectMapper = objectMapper;</span>
+<span class="fc" id="L22">    this.geoJsonPrecision = geoJsonPrecision;</span>
+<span class="fc" id="L23">    this.maxAllowedSpeedKnts = maxAllowedSpeedKnts;</span>
+<span class="fc" id="L24">  }</span>
+
+  public void process(InputStream in, OutputStream out, OutputStream wktOut, Map&lt;String, Object&gt; additionalProperties) throws ValidationException {
+<span class="fc" id="L27">    GeoJsonMultiLineParser parser = new GeoJsonMultiLineParser(objectMapper, geoJsonPrecision, maxAllowedSpeedKnts);</span>
+<span class="fc" id="L28">    try (</span>
+<span class="fc" id="L29">        JsonParser jsonParser = getJsonParser(in);</span>
+<span class="fc" id="L30">        JsonGenerator jsonGenerator = getGenerator(out);</span>
+<span class="fc" id="L31">        Writer wktWriter = new OutputStreamWriter(wktOut, StandardCharsets.UTF_8)) {</span>
+
+<span class="fc" id="L33">      parser.parse(jsonParser, jsonGenerator, wktWriter, additionalProperties);</span>
+
+<span class="nc" id="L35">    } catch (IOException e) {</span>
+<span class="nc" id="L36">      throw new RuntimeException(&quot;Unable to process geometry&quot;, e);</span>
+<span class="fc" id="L37">    }</span>
+<span class="fc" id="L38">  }</span>
+
+  public void process(InputStream in, OutputStream out, OutputStream wktOut) throws ValidationException {
+<span class="fc" id="L41">    process(in, out, wktOut, null);</span>
+<span class="fc" id="L42">  }</span>
+
+  private JsonGenerator getGenerator(OutputStream out) {
+    try {
+<span class="fc" id="L46">      return objectMapper.getFactory().createGenerator(out);</span>
+<span class="nc" id="L47">    } catch (IOException e) {</span>
+<span class="nc" id="L48">      throw new RuntimeException(&quot;Unable to create JSON generator&quot;, e);</span>
+    }
+  }
+
+  private JsonParser getJsonParser(InputStream in){
+    try {
+<span class="fc" id="L54">      return objectMapper.getFactory().createParser(in);</span>
+<span class="nc" id="L55">    } catch (IOException e) {</span>
+<span class="nc" id="L56">      throw new RuntimeException(&quot;Unable to create JSON parser&quot;, e);</span>
+    }
+  }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>
