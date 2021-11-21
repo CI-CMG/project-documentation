@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>S3ClientWrapper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:aws-zarr</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.awszarr</a> &gt; <span class="el_source">S3ClientWrapper.java</span></div><h1>S3ClientWrapper.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.awszarr;
+
+import edu.colorado.cires.cmg.s3out.S3ClientMultipartUpload;
+import java.io.InputStream;
+import java.util.Optional;
+import java.util.stream.Stream;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+
+/**
+ * A wrapper around the S3Client from the AWS SDK v2.  This allows for calls to the S3Client to
+ * be mocked for testing or allow for customization
+ */
+public interface S3ClientWrapper extends S3ClientMultipartUpload {
+
+  /**
+   * Creates a default instance of a S3ClientWrapper that works in most scenarios.
+   *
+   * @param s3 a {@link S3Client}
+   * @return a new S3ClientWrapper
+   */
+  static S3ClientWrapper createDefault(S3Client s3) {
+<span class="nc" id="L23">    return AwsS3ClientWrapper.builder().s3(s3).build();</span>
+  }
+
+  /**
+   * Returns an {@link Optional} that wraps an {@link InputStream} for reading a file from
+   * a S3 bucket. An empty {@link Optional} will be returned if the file does not exist.
+   *
+   * @param bucket the bucket name
+   * @param key a S3 key
+   * @return an {@link Optional} that wraps an {@link InputStream} for reading a file from a S3 backed zarr store
+   */
+  Optional&lt;InputStream&gt; getObject(String bucket, String key);
+
+  /**
+   * Deletes a file from a S3 bucket.
+   *
+   * @param bucket the bucket name
+   * @param key a S3 key
+   */
+  void deleteObject(String bucket, String key);
+
+  /**
+   * Returns a {@link Stream} representing the contents of a S3 bucket
+   *
+   * @param bucket the bucket name
+   * @param prefix filters the results such that all objects start with this prefix
+   * @return a {@link Stream} representing the contents of a S3 bucket
+   */
+  Stream&lt;ListObjectsV2Response&gt; listObjectsV2Paginator(String bucket, String prefix);
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

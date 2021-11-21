@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FileMockS3ClientWrapper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:aws-zarr</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.awszarr</a> &gt; <span class="el_source">FileMockS3ClientWrapper.java</span></div><h1>FileMockS3ClientWrapper.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.awszarr;
+
+import edu.colorado.cires.cmg.s3out.FileMockS3ClientMultipartUpload;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import software.amazon.awssdk.services.s3.model.CompletedPart;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.S3Object;
+
+/**
+ * A mock implementation of a {@link S3ClientWrapper} that is backed by the local filesystem. This should be used for testing ONLY.
+ */
+public class FileMockS3ClientWrapper implements S3ClientWrapper {
+
+  /**
+   * Creates a new {@link Builder} to build a FileMockS3ClientWrapper
+   *
+   * @return a new {@link Builder} to build a FileMockS3ClientWrapper
+   */
+  public static Builder builder() {
+<span class="fc" id="L29">    return new Builder();</span>
+  }
+
+  /**
+   * Builds a new {@link FileMockS3ClientWrapper}
+   */
+  public static class Builder {
+
+    private Path mockBucketDir;
+
+    private Builder() {
+
+    }
+
+    /**
+     * Sets the {@link Path} to a directory containing directories representing mock S3 buckets
+     *
+     * @param mockBucketDir a directory containing directories representing mock S3 buckets
+     * @return this Builder
+     */
+    public Builder mockBucketDir(Path mockBucketDir) {
+<span class="fc" id="L50">      this.mockBucketDir = mockBucketDir;</span>
+<span class="fc" id="L51">      return this;</span>
+    }
+
+    /**
+     * Builds a new {@link FileMockS3ClientWrapper}
+     *
+     * @return a new {@link FileMockS3ClientWrapper}
+     */
+    public FileMockS3ClientWrapper build() {
+<span class="fc" id="L60">      return new FileMockS3ClientWrapper(mockBucketDir);</span>
+    }
+  }
+
+  private final Path mockBucketDir;
+  private final FileMockS3ClientMultipartUpload s3Upload;
+
+<span class="fc" id="L67">  private FileMockS3ClientWrapper(Path mockBucketDir) {</span>
+<span class="fc" id="L68">    this.mockBucketDir = mockBucketDir;</span>
+<span class="fc" id="L69">    this.s3Upload = FileMockS3ClientMultipartUpload.builder().mockBucketDir(mockBucketDir).build();</span>
+<span class="fc" id="L70">  }</span>
+
+  @Override
+  public Optional&lt;InputStream&gt; getObject(String bucket, String key) {
+<span class="fc" id="L74">    Path path = mockBucketDir.resolve(bucket).resolve(key);</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">    if (Files.isRegularFile(path)) {</span>
+      try {
+<span class="fc" id="L77">        return Optional.of(Files.newInputStream(path));</span>
+<span class="nc" id="L78">      } catch (IOException e) {</span>
+<span class="nc" id="L79">        throw new IllegalStateException(&quot;Unable to open input stream: &quot; + path, e);</span>
+      }
+    }
+<span class="fc" id="L82">    return Optional.empty();</span>
+  }
+
+  @Override
+  public void deleteObject(String bucket, String key) {
+<span class="fc" id="L87">    Path path = mockBucketDir.resolve(bucket).resolve(key);</span>
+<span class="pc bpc" id="L88" title="2 of 4 branches missed.">    if (Files.exists(path) &amp;&amp; Files.isRegularFile(path)) {</span>
+      try {
+<span class="fc" id="L90">        Files.delete(path);</span>
+<span class="nc" id="L91">      } catch (IOException e) {</span>
+<span class="nc" id="L92">        throw new IllegalStateException(&quot;Unable to delete file &quot; + path, e);</span>
+<span class="fc" id="L93">      }</span>
+    }
+<span class="fc" id="L95">  }</span>
+
+  @Override
+  public Stream&lt;ListObjectsV2Response&gt; listObjectsV2Paginator(String bucket, String prefix) {
+<span class="fc" id="L99">    Path bucketRoot = mockBucketDir.resolve(bucket);</span>
+<span class="fc" id="L100">    Path start = bucketRoot.resolve(prefix);</span>
+    TreeSet&lt;String&gt; results;
+<span class="fc" id="L102">    try (Stream&lt;Path&gt; stream = Files.walk(start)) {</span>
+<span class="fc" id="L103">      results = stream</span>
+<span class="fc" id="L104">          .filter(Files::isRegularFile)</span>
+<span class="fc" id="L105">          .map(bucketRoot::relativize)</span>
+<span class="fc" id="L106">          .map(Path::normalize)</span>
+<span class="fc" id="L107">          .map(Path::toString)</span>
+<span class="fc" id="L108">          .map(key -&gt; key.replaceAll(&quot;\\\\&quot;, &quot;/&quot;))</span>
+<span class="fc" id="L109">          .collect(Collectors.toCollection(TreeSet::new));</span>
+<span class="nc" id="L110">    } catch (IOException e) {</span>
+<span class="nc" id="L111">      throw new IllegalStateException(&quot;Unable to list files: &quot; + start, e);</span>
+<span class="fc" id="L112">    }</span>
+<span class="fc" id="L113">    return results.stream().map(key -&gt; ListObjectsV2Response.builder().contents(S3Object.builder().key(key).build()).build());</span>
+  }
+
+  @Override
+  public String createMultipartUpload(String bucket, String key) {
+<span class="fc" id="L118">    return s3Upload.createMultipartUpload(bucket, key);</span>
+  }
+
+  @Override
+  public CompletedPart uploadPart(String bucket, String key, String uploadId, int partNumber, ByteBuffer buffer) {
+<span class="fc" id="L123">    return s3Upload.uploadPart(bucket, key, uploadId, partNumber, buffer);</span>
+  }
+
+  @Override
+  public void completeMultipartUpload(String bucket, String key, String uploadId, Collection&lt;CompletedPart&gt; completedParts) {
+<span class="fc" id="L128">    s3Upload.completeMultipartUpload(bucket, key, uploadId, completedParts);</span>
+<span class="fc" id="L129">  }</span>
+
+  @Override
+  public void abortMultipartUpload(String bucket, String key, String uploadId) {
+<span class="nc" id="L133">    s3Upload.abortMultipartUpload(bucket, key, uploadId);</span>
+<span class="nc" id="L134">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

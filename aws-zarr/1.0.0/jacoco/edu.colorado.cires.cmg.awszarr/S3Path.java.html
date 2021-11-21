@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>S3Path.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:aws-zarr</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.awszarr</a> &gt; <span class="el_source">S3Path.java</span></div><h1>S3Path.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.awszarr;
+
+import com.bc.zarr.ZarrUtils;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+class S3Path {
+
+  private final String storeKey;
+  private final List&lt;String&gt; parts;
+
+<span class="fc" id="L15">  S3Path(List&lt;String&gt; storeKeyParts) {</span>
+<span class="fc" id="L16">    parts = storeKeyParts.stream()</span>
+<span class="pc bpc" id="L17" title="2 of 4 branches missed.">        .filter(part -&gt; part != null &amp;&amp; !part.trim().isEmpty())</span>
+<span class="fc" id="L18">        .map(String::trim)</span>
+<span class="fc" id="L19">        .collect(Collectors.toList());</span>
+<span class="fc" id="L20">    this.storeKey = String.join(&quot;/&quot;, parts);</span>
+<span class="fc" id="L21">  }</span>
+
+<span class="fc" id="L23">  S3Path(String storeKey) {</span>
+<span class="fc bfc" id="L24" title="All 2 branches covered.">    this.storeKey = storeKey.trim().isEmpty() ? &quot;&quot; : ZarrUtils.normalizeStoragePath(storeKey);</span>
+<span class="fc" id="L25">    parts = split(this.storeKey);</span>
+<span class="fc" id="L26">  }</span>
+
+  boolean endsWith(S3Path suffix) {
+<span class="fc" id="L29">    int thisSize = size();</span>
+<span class="fc" id="L30">    int suffixSize = suffix.size();</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">    if(suffixSize &gt; thisSize) {</span>
+<span class="fc" id="L32">      return false;</span>
+    }
+<span class="fc" id="L34">    return suffix.getParts().equals(parts.subList(thisSize - suffixSize, thisSize));</span>
+  }
+
+  private static List&lt;String&gt; split(String key) {
+<span class="fc bfc" id="L38" title="All 2 branches covered.">    if (key.isEmpty()) {</span>
+<span class="fc" id="L39">      return Collections.emptyList();</span>
+    }
+<span class="fc" id="L41">    return Arrays.asList(key.split(&quot;/&quot;));</span>
+  }
+
+  public List&lt;String&gt; getParts() {
+<span class="fc" id="L45">    return parts;</span>
+  }
+
+  int size() {
+<span class="fc" id="L49">    return parts.size();</span>
+  }
+
+  S3Path resolve(String name) {
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">    if (name.trim().isEmpty()) {</span>
+<span class="nc" id="L54">      return this;</span>
+    }
+<span class="fc" id="L56">    return new S3Path(storeKey + &quot;/&quot; + ZarrUtils.normalizeStoragePath(name));</span>
+  }
+
+
+
+  @Override
+  public boolean equals(Object o) {
+<span class="nc bnc" id="L63" title="All 2 branches missed.">    if (this == o) {</span>
+<span class="nc" id="L64">      return true;</span>
+    }
+<span class="nc bnc" id="L66" title="All 4 branches missed.">    if (o == null || getClass() != o.getClass()) {</span>
+<span class="nc" id="L67">      return false;</span>
+    }
+<span class="nc" id="L69">    S3Path s3Path = (S3Path) o;</span>
+<span class="nc" id="L70">    return Objects.equals(storeKey, s3Path.storeKey);</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L75">    return Objects.hash(storeKey);</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="fc" id="L80">    return storeKey;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

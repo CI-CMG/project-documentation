@@ -1,0 +1,9 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+io.github.ci-cmg:aws-zarr,edu.colorado.cires.cmg.awszarr,AwsS3ClientWrapper,83,0,0,0,17,0,9,0,9,0
+io.github.ci-cmg:aws-zarr,edu.colorado.cires.cmg.awszarr,AwsS3ZarrStore,1,220,1,1,0,47,1,17,0,17
+io.github.ci-cmg:aws-zarr,edu.colorado.cires.cmg.awszarr,S3ClientWrapper,5,0,0,0,1,0,1,0,1,0
+io.github.ci-cmg:aws-zarr,edu.colorado.cires.cmg.awszarr,FileMockS3ClientWrapper.Builder,0,12,0,0,0,3,0,2,0,2
+io.github.ci-cmg:aws-zarr,edu.colorado.cires.cmg.awszarr,FileMockS3ClientWrapper,49,148,2,4,8,30,3,12,1,11
+io.github.ci-cmg:aws-zarr,edu.colorado.cires.cmg.awszarr,S3Path,35,109,9,9,8,24,8,12,2,9
+io.github.ci-cmg:aws-zarr,edu.colorado.cires.cmg.awszarr,AwsS3ZarrStore.Builder,10,39,0,0,4,11,2,5,2,5
+io.github.ci-cmg:aws-zarr,edu.colorado.cires.cmg.awszarr,AwsS3ClientWrapper.Builder,21,0,0,0,4,0,2,0,2,0

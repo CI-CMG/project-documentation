@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AwsS3ZarrStore.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:aws-zarr</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.awszarr</a> &gt; <span class="el_source">AwsS3ZarrStore.java</span></div><h1>AwsS3ZarrStore.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.awszarr;
+
+import com.bc.zarr.ZarrConstants;
+import com.bc.zarr.storage.Store;
+import edu.colorado.cires.cmg.s3out.S3OutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Objects;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import software.amazon.awssdk.services.s3.model.S3Object;
+
+/**
+ * An implementation of a {@link Store} that is backed by an AWS S3 bucket
+ */
+public class AwsS3ZarrStore implements Store {
+
+  /**
+   * Creates a new {@link Builder} that builds a new AwsS3ZarrStore
+   *
+   * @return a new {@link Builder} that builds a new AwsS3ZarrStore
+   */
+  public static Builder builder() {
+<span class="fc" id="L26">    return new Builder();</span>
+  }
+
+  /**
+   * Builds a new {@link AwsS3ZarrStore}
+   */
+  public static class Builder {
+
+    private String bucket;
+    private String key;
+    private S3ClientWrapper s3;
+<span class="fc" id="L37">    private int multipartUploadMb = 5;</span>
+<span class="fc" id="L38">    private int maxUploadBuffers = 1;</span>
+
+<span class="fc" id="L40">    private Builder() {</span>
+
+<span class="fc" id="L42">    }</span>
+
+    /**
+     * Sets the {@link S3ClientWrapper} representing S3 bucket actions
+     * Required.
+     *
+     * @param s3 the {@link S3ClientWrapper}
+     * @return this Builder
+     */
+    public Builder s3(S3ClientWrapper s3) {
+<span class="fc" id="L52">      this.s3 = s3;</span>
+<span class="fc" id="L53">      return this;</span>
+    }
+
+    /**
+     * Sets the bucket name.
+     * Required.
+     *
+     * @param bucket the bucket name
+     * @return this Builder
+     */
+    public Builder bucket(String bucket) {
+<span class="fc" id="L64">      this.bucket = bucket;</span>
+<span class="fc" id="L65">      return this;</span>
+    }
+
+    /**
+     * Sets the key prefix for a zarr store in a S3 bucket.
+     * Required.
+     *
+     * @param key the key prefix for a zarr store in a S3 bucket
+     * @return this Builder
+     */
+    public Builder key(String key) {
+<span class="fc" id="L76">      this.key = key;</span>
+<span class="fc" id="L77">      return this;</span>
+    }
+
+    /**
+     * A {@link S3OutputStream} is used to upload files in parts. multipartUploadMb represents the size of the parts to
+     * upload in MiB.  This value must be at least 5, which is the default.
+     * Default: 5
+     *
+     * @param multipartUploadMb the part size in MiB
+     * @return this Builder
+     */
+    public Builder multipartUploadMb(int multipartUploadMb) {
+<span class="nc" id="L89">      this.multipartUploadMb = multipartUploadMb;</span>
+<span class="nc" id="L90">      return this;</span>
+    }
+
+    /**
+     * A {@link S3OutputStream} uses a queue to allow multipart uploads to S3 to happen while additional
+     * buffers are being filled concurrently. The maxUploadBuffers defines the number of parts
+     * to be queued before blocking population of additional parts.  The default value is 1.
+     * Specifying a higher value may improve upload speed at the expense of more heap usage.
+     * Using a value higher than one should be tested to see if any performance gains are achieved
+     * for your situation.
+     * Default: 1
+     *
+     * @param maxUploadBuffers the number of buffers in the queue before blocking
+     * @return this Builder
+     */
+    public Builder maxUploadBuffers(int maxUploadBuffers) {
+<span class="nc" id="L106">      this.maxUploadBuffers = maxUploadBuffers;</span>
+<span class="nc" id="L107">      return this;</span>
+    }
+
+    /**
+     * Builds a new {@link AwsS3ZarrStore}
+     *
+     * @return a new {@link AwsS3ZarrStore}
+     */
+    public AwsS3ZarrStore build() {
+<span class="fc" id="L116">      return new AwsS3ZarrStore(s3, bucket, key, multipartUploadMb, maxUploadBuffers);</span>
+    }
+
+  }
+
+  private final String bucket;
+  private final S3Path keyPrefix;
+  private final S3ClientWrapper s3;
+  private final int multipartUploadMb;
+  private final int maxUploadBuffers;
+
+<span class="fc" id="L127">  private AwsS3ZarrStore(S3ClientWrapper s3, String bucket, String keyPrefix, int multipartUploadMb, int maxUploadBuffers) {</span>
+<span class="fc" id="L128">    this.bucket = bucket.trim();</span>
+<span class="fc" id="L129">    this.keyPrefix = new S3Path(keyPrefix);</span>
+<span class="fc" id="L130">    this.s3 = Objects.requireNonNull(s3);</span>
+<span class="fc" id="L131">    this.multipartUploadMb = multipartUploadMb;</span>
+<span class="fc" id="L132">    this.maxUploadBuffers = maxUploadBuffers;</span>
+<span class="fc" id="L133">  }</span>
+
+  @Override
+  public InputStream getInputStream(String key) throws IOException {
+<span class="fc" id="L137">    return s3.getObject(bucket, keyPrefix.resolve(key).toString()).orElse(null);</span>
+  }
+
+  @Override
+  public OutputStream getOutputStream(String key) throws IOException {
+<span class="fc" id="L142">    return S3OutputStream.builder()</span>
+<span class="fc" id="L143">        .s3(s3)</span>
+<span class="fc" id="L144">        .bucket(bucket)</span>
+<span class="fc" id="L145">        .key(keyPrefix.resolve(key).toString())</span>
+<span class="fc" id="L146">        .partSizeMib(multipartUploadMb)</span>
+<span class="fc" id="L147">        .uploadQueueSize(maxUploadBuffers)</span>
+<span class="fc" id="L148">        .build();</span>
+  }
+
+  @Override
+  public void delete(String key) throws IOException {
+<span class="fc" id="L153">    s3.deleteObject(bucket, keyPrefix.resolve(key).toString());</span>
+<span class="fc" id="L154">  }</span>
+
+  private TreeSet&lt;String&gt; getParentsOf(String suffix) throws IOException {
+<span class="fc" id="L157">    return getKeysEndingWith(suffix).stream()</span>
+<span class="fc" id="L158">        .map(S3Path::new)</span>
+<span class="fc" id="L159">        .map(S3Path::getParts)</span>
+<span class="fc" id="L160">        .map(parts -&gt; new S3Path(parts.subList(0, parts.size() - 1)))</span>
+<span class="fc" id="L161">        .map(S3Path::toString)</span>
+<span class="fc" id="L162">        .collect(Collectors.toCollection(TreeSet::new));</span>
+  }
+
+  @Override
+  public TreeSet&lt;String&gt; getArrayKeys() throws IOException {
+<span class="fc" id="L167">    return getParentsOf(ZarrConstants.FILENAME_DOT_ZARRAY);</span>
+  }
+
+  @Override
+  public TreeSet&lt;String&gt; getGroupKeys() throws IOException {
+<span class="fc" id="L172">    return getParentsOf(ZarrConstants.FILENAME_DOT_ZGROUP);</span>
+  }
+
+  @Override
+  public TreeSet&lt;String&gt; getKeysEndingWith(String suffix) throws IOException {
+<span class="fc" id="L177">    final S3Path suffixPath = new S3Path(suffix);</span>
+<span class="fc" id="L178">    try (Stream&lt;S3Path&gt; stream = getObjects(keyPrefix.toString())) {</span>
+<span class="fc" id="L179">      return stream</span>
+<span class="fc" id="L180">          .filter(path -&gt; path.endsWith(suffixPath))</span>
+<span class="fc" id="L181">          .map(S3Path::getParts)</span>
+<span class="fc" id="L182">          .map(parts -&gt; new S3Path(parts.subList(keyPrefix.size(), parts.size())))</span>
+<span class="fc" id="L183">          .map(S3Path::toString)</span>
+<span class="fc" id="L184">          .collect(Collectors.toCollection(TreeSet::new));</span>
+    }
+
+  }
+
+  private Stream&lt;S3Path&gt; getObjects(String prefix) {
+<span class="fc" id="L190">    return s3.listObjectsV2Paginator(bucket, prefix)</span>
+<span class="fc" id="L191">        .flatMap(response -&gt; response.contents().stream())</span>
+<span class="fc" id="L192">        .map(S3Object::key)</span>
+<span class="fc" id="L193">        .map(S3Path::new);</span>
+  }
+
+  @Override
+  public Stream&lt;String&gt; getRelativeLeafKeys(String key) throws IOException {
+<span class="fc" id="L198">    final S3Path rootPath = keyPrefix.resolve(key);</span>
+    TreeSet&lt;String&gt; keys;
+<span class="fc" id="L200">    try (Stream&lt;S3Path&gt; stream = getObjects(rootPath.toString())) {</span>
+<span class="fc" id="L201">      keys = stream</span>
+<span class="fc" id="L202">          .map(S3Path::getParts)</span>
+<span class="fc" id="L203">          .map(parts -&gt; new S3Path(parts.subList(rootPath.size(), parts.size())))</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">          .filter(s3Path -&gt; s3Path.size() &gt; 0)</span>
+<span class="fc" id="L205">          .map(S3Path::toString)</span>
+<span class="fc" id="L206">          .collect(Collectors.toCollection(TreeSet::new));</span>
+    }
+<span class="fc" id="L208">    return keys.stream();  // wrap in collection and then stream as caller does not close the stream</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
