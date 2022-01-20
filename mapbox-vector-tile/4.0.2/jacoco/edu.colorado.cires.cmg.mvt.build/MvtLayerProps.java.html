@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MvtLayerProps.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:mapbox-vector-tile</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.mvt.build</a> &gt; <span class="el_source">MvtLayerProps.java</span></div><h1>MvtLayerProps.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.mvt.build;
+
+import edu.colorado.cires.cmg.mvt.encoding.MvtValue;
+import edu.colorado.cires.cmg.mvt.util.JdkUtils;
+
+import java.util.*;
+
+/**
+ * Support MVT features that must reference properties by their key and value index.
+ */
+public final class MvtLayerProps {
+    private LinkedHashMap&lt;String, Integer&gt; keys;
+    private LinkedHashMap&lt;Object, Integer&gt; vals;
+
+<span class="fc" id="L15">    public MvtLayerProps() {</span>
+<span class="fc" id="L16">        keys = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L17">        vals = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L18">    }</span>
+
+    public Integer keyIndex(String k) {
+<span class="nc" id="L21">        return keys.get(k);</span>
+    }
+
+    public Integer valueIndex(Object v) {
+<span class="nc" id="L25">        return vals.get(v);</span>
+    }
+
+    /**
+     * Add the key and return it's index code. If the key already is present, the previous
+     * index code is returned and no insertion is done.
+     *
+     * @param key key to add
+     * @return index of the key
+     */
+    public int addKey(String key) {
+<span class="fc" id="L36">        JdkUtils.requireNonNull(key);</span>
+<span class="fc" id="L37">        int nextIndex = keys.size();</span>
+<span class="fc" id="L38">        final Integer mapIndex = JdkUtils.putIfAbsent(keys, key, nextIndex);</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        return mapIndex == null ? nextIndex : mapIndex;</span>
+    }
+
+    /**
+     * Add the value and return it's index code. If the value already is present, the previous
+     * index code is returned and no insertion is done. If {@code value} is an unsupported type
+     * for encoding in a MVT, then it will not be added.
+     *
+     * @param value value to add
+     * @return index of the value, -1 on unsupported value types
+     * @see MvtValue#isValidPropValue(Object)
+     */
+    public int addValue(Object value) {
+<span class="fc" id="L52">        JdkUtils.requireNonNull(value);</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if(!MvtValue.isValidPropValue(value)) {</span>
+<span class="nc" id="L54">            return -1;</span>
+        }
+
+<span class="fc" id="L57">        int nextIndex = vals.size();</span>
+<span class="fc" id="L58">        final Integer mapIndex = JdkUtils.putIfAbsent(vals, value, nextIndex);</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        return mapIndex == null ? nextIndex : mapIndex;</span>
+    }
+
+    public Iterable&lt;String&gt; getKeys() {
+<span class="fc" id="L63">        return keys.keySet();</span>
+    }
+
+    public Iterable&lt;Object&gt; getVals() {
+<span class="fc" id="L67">        return vals.keySet();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
