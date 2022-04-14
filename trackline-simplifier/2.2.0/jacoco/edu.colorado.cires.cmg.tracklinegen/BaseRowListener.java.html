@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BaseRowListener.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:trackline-simplifier</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.tracklinegen</a> &gt; <span class="el_source">BaseRowListener.java</span></div><h1>BaseRowListener.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.tracklinegen;
+
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Locale;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Point;
+
+public class BaseRowListener&lt;T extends DataRow&gt; implements RowListener&lt;T&gt; {
+
+  private final long msSplit;
+  private final GeometrySimplifier geometrySimplifier;
+  private final Predicate&lt;T&gt; filterRow;
+  private final GeoJsonMultiLineWriter lineWriter;
+  private final int batchSize;
+  private final long maxAllowedSimplifiedPoints;
+
+<span class="fc" id="L27">  private long unsimplifiedPointCount = 0;</span>
+<span class="fc" id="L28">  private long simplifiedPointCount = 0;</span>
+<span class="fc" id="L29">  private long targetPointCount = 0;</span>
+  private final GeometryFactory geometryFactory;
+<span class="fc" id="L31">  private boolean started = false;</span>
+
+  private List&lt;PointState&gt; pointBuffer;
+
+  private final double minDistance;
+  private final DecimalFormat format;
+
+
+  public BaseRowListener(
+      long msSplit,
+      GeometrySimplifier geometrySimplifier,
+      GeoJsonMultiLineWriter lineWriter,
+      int batchSize,
+      Predicate&lt;T&gt; filterRow,
+      long maxAllowedSimplifiedPoints,
+      GeometryFactory geometryFactory,
+      int geoJsonPrecision
+<span class="fc" id="L48">  ) {</span>
+<span class="fc" id="L49">    this.msSplit = msSplit;</span>
+<span class="fc" id="L50">    this.geometrySimplifier = geometrySimplifier;</span>
+<span class="fc" id="L51">    this.lineWriter = lineWriter;</span>
+<span class="fc" id="L52">    this.filterRow = filterRow;</span>
+<span class="fc" id="L53">    this.batchSize = batchSize;</span>
+<span class="fc" id="L54">    this.maxAllowedSimplifiedPoints = maxAllowedSimplifiedPoints;</span>
+<span class="fc" id="L55">    this.geometryFactory = geometryFactory;</span>
+<span class="fc" id="L56">    this.minDistance = 1d / Math.pow(10d, geoJsonPrecision);</span>
+<span class="fc" id="L57">    StringBuilder sb = new StringBuilder(&quot;0.&quot;);</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">    for (int i = 1; i &lt;= geoJsonPrecision; i++) {</span>
+<span class="fc" id="L59">      sb.append(&quot;#&quot;);</span>
+    }
+<span class="fc" id="L61">    format = new DecimalFormat(sb.toString(), DecimalFormatSymbols.getInstance(Locale.ENGLISH));</span>
+<span class="fc" id="L62">  }</span>
+
+  @Override
+  public void start() {
+<span class="fc" id="L66">    pointBuffer = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L67">  }</span>
+
+  private List&lt;List&lt;PointState&gt;&gt; splitBufferSegments() {
+<span class="fc" id="L70">    final List&lt;List&lt;PointState&gt;&gt; segments = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">    for (int i = 0; i &lt; pointBuffer.size(); i++) {</span>
+<span class="fc" id="L72">      PointState thisPoint = pointBuffer.get(i);</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">      if (i == 0) {</span>
+<span class="fc" id="L74">        List&lt;PointState&gt; segment = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L75">        segments.add(segment);</span>
+<span class="fc" id="L76">        segment.add(thisPoint);</span>
+<span class="fc" id="L77">      } else {</span>
+<span class="fc" id="L78">        List&lt;PointState&gt; lastSegment = segments.get(segments.size() - 1);</span>
+<span class="fc" id="L79">        PointState lastPoint = lastSegment.get(lastSegment.size() - 1);</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (shouldSplit(lastPoint, thisPoint)) {</span>
+<span class="fc" id="L81">          List&lt;PointState&gt; segment = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L82">          thisPoint.setIndex(0);</span>
+<span class="fc" id="L83">          segment.add(thisPoint);</span>
+<span class="fc" id="L84">          segments.add(segment);</span>
+<span class="fc" id="L85">        } else {</span>
+<span class="fc" id="L86">          thisPoint.setIndex(lastPoint.getIndex() + 1);</span>
+<span class="fc" id="L87">          lastSegment.add(thisPoint);</span>
+        }
+      }
+    }
+
+<span class="fc" id="L92">    return segments;</span>
+  }
+
+  private List&lt;PointState&gt; simplifySegment(List&lt;PointState&gt; segment) {
+    List&lt;PointState&gt; simplifiedSegment;
+<span class="fc bfc" id="L97" title="All 2 branches covered.">    if (segment.size() &gt; 1) {</span>
+<span class="fc" id="L98">      int startIndex = segment.get(0).getIndex();</span>
+<span class="fc" id="L99">      LineString simplified = simplify(segment.stream().map(PointState::getPoint).map(Point::getCoordinate).collect(Collectors.toList()));</span>
+<span class="fc" id="L100">      Coordinate[] coordinates = simplified.getCoordinateSequence().toCoordinateArray();</span>
+<span class="fc" id="L101">      simplifiedSegment = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">      for (int i = 0; i &lt; coordinates.length; i++) {</span>
+<span class="fc bfc" id="L103" title="All 6 branches covered.">        if (i == 0 || coordinates.length &gt; 2 || distance(coordinates[0], coordinates[1]) &gt; minDistance) {</span>
+<span class="fc" id="L104">          Coordinate coordinate = coordinates[i];</span>
+<span class="fc" id="L105">          PointState pointState = new PointState(geometryFactory.createPoint(coordinate), true);</span>
+<span class="fc" id="L106">          pointState.setSimplified(true);</span>
+<span class="fc" id="L107">          pointState.setIndex(i + startIndex);</span>
+<span class="fc" id="L108">          simplifiedSegment.add(pointState);</span>
+        }
+      }
+<span class="fc" id="L111">    } else {</span>
+<span class="fc" id="L112">      simplifiedSegment = segment;</span>
+    }
+<span class="fc" id="L114">    return simplifiedSegment;</span>
+  }
+
+
+  private List&lt;List&lt;PointState&gt;&gt; writeSegments(List&lt;List&lt;PointState&gt;&gt; segments) {
+<span class="fc" id="L119">    List&lt;List&lt;PointState&gt;&gt; nextBuffer = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">    for (int segmentIndex = 0; segmentIndex &lt; segments.size(); segmentIndex++) {</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">      boolean lastSegment = segmentIndex == segments.size() - 1;</span>
+<span class="fc" id="L122">      List&lt;PointState&gt; segment = segments.get(segmentIndex);</span>
+
+<span class="fc bfc" id="L124" title="All 2 branches covered.">      if (lastSegment) {</span>
+<span class="fc" id="L125">        List&lt;PointState&gt; nextSegment = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L126">        nextSegment.add(segment.get(segment.size() - 1));</span>
+<span class="fc" id="L127">        nextBuffer.add(nextSegment);</span>
+<span class="fc" id="L128">        segment = segment.subList(0, segment.size() - 1);</span>
+      }
+
+<span class="fc bfc" id="L131" title="All 4 branches covered.">      if (!segment.isEmpty() &amp;&amp; segment.get(0).getIndex() == 0) {</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        if (!started) {</span>
+<span class="fc" id="L133">          lineWriter.start();</span>
+<span class="fc" id="L134">          started = true;</span>
+        }
+<span class="fc" id="L136">        lineWriter.startLine();</span>
+      }
+
+<span class="fc" id="L139">      int maxIndex = segment.size() - 1;</span>
+
+<span class="fc bfc" id="L141" title="All 2 branches covered.">      for (int coordinateIndex = 0; coordinateIndex &lt;= maxIndex; coordinateIndex++) {</span>
+<span class="fc" id="L142">        PointState pointState = segment.get(coordinateIndex);</span>
+<span class="fc" id="L143">        incrementSimplifiedPointCount();</span>
+<span class="fc" id="L144">        writeCoordinate(pointState.getPoint().getCoordinate());</span>
+<span class="fc bfc" id="L145" title="All 4 branches covered.">        if (coordinateIndex == maxIndex &amp;&amp; !lastSegment) {</span>
+<span class="fc" id="L146">          lineWriter.endLine();</span>
+        }
+      }
+
+    }
+<span class="fc" id="L151">    return nextBuffer;</span>
+  }
+
+  private List&lt;List&lt;PointState&gt;&gt; simplifySegments(List&lt;List&lt;PointState&gt;&gt; segments) {
+
+<span class="fc" id="L156">    List&lt;List&lt;PointState&gt;&gt; simplified = removeSingletons(</span>
+<span class="fc" id="L157">        segments.stream().map(this::simplifySegment).collect(Collectors.toList()),</span>
+        started
+    );
+
+<span class="fc" id="L161">    int count = simplified.stream().map(List::size).reduce(0, Integer::sum);</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">    if (count &lt; batchSize) {</span>
+<span class="fc" id="L163">      return simplified;</span>
+    }
+
+<span class="fc" id="L166">    return writeSegments(segments);</span>
+  }
+
+  private static List&lt;List&lt;PointState&gt;&gt; removeNonTarget(List&lt;List&lt;PointState&gt;&gt; segments) {
+<span class="fc bfc" id="L170" title="All 2 branches covered.">    for (List&lt;PointState&gt; segment : segments) {</span>
+<span class="fc" id="L171">      ListIterator&lt;PointState&gt; it = segment.listIterator();</span>
+<span class="fc" id="L172">      int removedCount = 0;</span>
+<span class="fc" id="L173">      boolean foundTarget = false;</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">      while (it.hasNext()) {</span>
+<span class="fc" id="L175">        PointState pointState = it.next();</span>
+<span class="fc bfc" id="L176" title="All 4 branches covered.">        if (!foundTarget &amp;&amp; !pointState.isTarget()) {</span>
+<span class="fc" id="L177">          removedCount++;</span>
+<span class="fc" id="L178">          it.remove();</span>
+        } else {
+<span class="fc" id="L180">          foundTarget = true;</span>
+<span class="fc" id="L181">          pointState.setIndex(pointState.getIndex() - removedCount);</span>
+        }
+<span class="fc" id="L183">      }</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">      if (!segment.isEmpty()) {</span>
+<span class="fc" id="L185">        it = segment.listIterator(segment.size());</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        while (it.hasPrevious()) {</span>
+<span class="fc" id="L187">          PointState pointState = it.previous();</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">          if (!pointState.isTarget()) {</span>
+<span class="fc" id="L189">            it.remove();</span>
+          } else {
+            break;
+          }
+<span class="fc" id="L193">        }</span>
+      }
+<span class="fc" id="L195">    }</span>
+<span class="fc" id="L196">    return segments;</span>
+  }
+
+  private static List&lt;List&lt;PointState&gt;&gt; removeSingletons(List&lt;List&lt;PointState&gt;&gt; segments, boolean started) {
+
+<span class="fc" id="L201">    List&lt;List&lt;PointState&gt;&gt; filtered = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">    for (int i = 0; i &lt; segments.size(); i++) {</span>
+<span class="fc" id="L203">      List&lt;PointState&gt; segment = segments.get(i);</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">      if (segment.isEmpty()) {</span>
+<span class="fc" id="L205">        continue;</span>
+      }
+<span class="fc" id="L207">      int lastIndex = segment.get(segment.size() - 1).getIndex();</span>
+<span class="fc bfc" id="L208" title="All 8 branches covered.">      if (lastIndex &gt; 0 || (i == 0 &amp;&amp; !started) || i == segments.size() - 1) {</span>
+<span class="fc" id="L209">        filtered.add(segment);</span>
+      }
+    }
+
+    // remove the first segment if it is a singleton and there are other non-singletons
+<span class="fc bfc" id="L214" title="All 6 branches covered.">    if (filtered.size() &gt; 1 &amp;&amp; filtered.get(0).size() == 1 &amp;&amp; filtered.get(0).get(0).getIndex() == 0) {</span>
+<span class="fc" id="L215">      filtered = filtered.subList(1, filtered.size());</span>
+    }
+
+<span class="fc" id="L218">    return filtered;</span>
+  }
+
+  private void writeSimplified() {
+<span class="fc" id="L222">    final List&lt;List&lt;PointState&gt;&gt; segments = removeSingletons(removeNonTarget(splitBufferSegments()), started);</span>
+<span class="fc" id="L223">    int count = segments.stream().map(List::size).reduce(0, Integer::sum);</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">    if (count &lt;= batchSize) {</span>
+<span class="fc" id="L225">      pointBuffer = segments.stream().flatMap(List::stream).collect(Collectors.toCollection(ArrayList::new));</span>
+    } else {
+<span class="fc" id="L227">      pointBuffer = simplifySegments(segments).stream().flatMap(List::stream).collect(Collectors.toCollection(ArrayList::new));</span>
+    }
+<span class="fc" id="L229">  }</span>
+
+  private double distance(Coordinate coordinate1, Coordinate coordinate2) {
+<span class="fc" id="L232">    return geometryFactory.createPoint(coordinate1).distance(geometryFactory.createPoint(coordinate2));</span>
+  }
+
+  @Override
+  public void processRow(T row) {
+<span class="fc" id="L237">    unsimplifiedPointCount++;</span>
+<span class="fc" id="L238">    PointState pointState = new PointState(geometryFactory.createPoint(toCoordinate(row)), isDesiredRowType(row));</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">    if (pointState.isTarget()) {</span>
+<span class="fc" id="L240">      targetPointCount++;</span>
+    }
+
+<span class="fc" id="L243">    pointBuffer.add(pointState);</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">    if (pointBuffer.size() &gt; batchSize) {</span>
+<span class="fc" id="L245">      writeSimplified();</span>
+    }
+<span class="fc" id="L247">  }</span>
+
+  private void writeFinalSegments(List&lt;List&lt;PointState&gt;&gt; segments) {
+<span class="fc" id="L250">    List&lt;List&lt;PointState&gt;&gt; lastSingleton = writeSegments(segments);</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">    if(lastSingleton.get(0).get(0).getIndex() &gt; 0) {</span>
+<span class="fc" id="L252">      incrementSimplifiedPointCount();</span>
+<span class="fc" id="L253">      writeCoordinate(lastSingleton.get(0).get(0).getPoint().getCoordinate());</span>
+<span class="fc" id="L254">      lineWriter.endLine();</span>
+    }
+<span class="fc" id="L256">  }</span>
+
+  @Override
+  public void finish() {
+
+<span class="fc" id="L261">    final List&lt;List&lt;PointState&gt;&gt; segments = simplifySegments(removeSingletons(removeNonTarget(splitBufferSegments()), started));</span>
+
+<span class="fc" id="L263">    boolean lineString = false;</span>
+
+<span class="fc bfc" id="L265" title="All 2 branches covered.">    if (started) {</span>
+<span class="fc" id="L266">      writeFinalSegments(segments);</span>
+<span class="fc" id="L267">      lineString = true;</span>
+    } else {
+<span class="fc" id="L269">      int count = segments.stream().map(List::size).reduce(0, Integer::sum);</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">      if(count &gt; 1) {</span>
+<span class="fc" id="L271">        writeFinalSegments(segments);</span>
+<span class="fc" id="L272">        lineString = true;</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">      } else if (count == 1){</span>
+<span class="fc" id="L274">        lineWriter.startPoint();</span>
+<span class="fc" id="L275">        started = true;</span>
+<span class="fc" id="L276">        incrementSimplifiedPointCount();</span>
+<span class="fc" id="L277">        PointState pointState = segments.get(0).get(0);</span>
+<span class="fc" id="L278">        writeCoordinate(pointState.getPoint().getCoordinate());</span>
+<span class="fc" id="L279">      } else {</span>
+<span class="fc" id="L280">        lineWriter.start();</span>
+<span class="fc" id="L281">        lineString = true;</span>
+      }
+    }
+
+<span class="fc" id="L285">    GeometryProperties properties = GeometryProperties.Builder.configure()</span>
+<span class="fc" id="L286">        .withSimplifiedPointCount(simplifiedPointCount)</span>
+<span class="fc" id="L287">        .withUnsimplifiedPointCount(unsimplifiedPointCount)</span>
+<span class="fc" id="L288">        .withTargetPointCount(targetPointCount)</span>
+<span class="fc" id="L289">        .build();</span>
+
+<span class="fc" id="L291">    lineWriter.finish(properties, lineString);</span>
+<span class="fc" id="L292">  }</span>
+
+  private boolean isDesiredRowType(T row) {
+<span class="fc" id="L295">    return filterRow.test(row);</span>
+  }
+
+  private boolean shouldSplit(PointState point1, PointState point2) {
+<span class="fc bfc" id="L299" title="All 2 branches covered.">    if(!isSplittingEnabled()) {</span>
+<span class="fc" id="L300">      return false;</span>
+    }
+<span class="fc bfc" id="L302" title="All 2 branches covered.">    if(point2.isSimplified()) {</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">      return point2.getIndex() == 0;</span>
+    } else {
+<span class="fc" id="L305">      double difference = point2.getPoint().getCoordinate().getZ() - point1.getPoint().getCoordinate().getZ();</span>
+<span class="fc bfc" id="L306" title="All 2 branches covered.">      return difference &gt; msSplit;</span>
+    }
+  }
+
+  private boolean isSplittingEnabled() {
+<span class="fc bfc" id="L311" title="All 2 branches covered.">    return msSplit &gt; 0;</span>
+  }
+
+  private void writeCoordinate(Coordinate coordinate) {
+<span class="fc" id="L315">    List&lt;Double&gt; args = new ArrayList&lt;&gt;(4);</span>
+<span class="fc" id="L316">    args.add(coordinate.getX());</span>
+<span class="fc" id="L317">    args.add(coordinate.getY());</span>
+
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">    if (!Double.isNaN(coordinate.getZ())) {</span>
+<span class="fc" id="L320">      args.add(coordinate.getZ());</span>
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">      if (!Double.isNaN(coordinate.getM())) {</span>
+<span class="nc" id="L322">        args.add(coordinate.getM());</span>
+      }
+    }
+<span class="fc" id="L325">    lineWriter.writeCoordinate(args);</span>
+<span class="fc" id="L326">  }</span>
+
+  private void incrementSimplifiedPointCount() {
+<span class="fc bfc" id="L329" title="All 4 branches covered.">    if (maxAllowedSimplifiedPoints &gt; 0 &amp;&amp; simplifiedPointCount &gt; maxAllowedSimplifiedPoints) {</span>
+<span class="fc" id="L330">      throw new SimplifiedPointCountExceededException(</span>
+          &quot;Simplified point count exceeded: allowed = &quot; + maxAllowedSimplifiedPoints + &quot; batched points = &quot; + simplifiedPointCount
+      );
+    }
+<span class="fc" id="L334">    simplifiedPointCount++;</span>
+<span class="fc" id="L335">  }</span>
+
+  private double round(double value) {
+<span class="fc" id="L338">    return Double.parseDouble(format.format(value));</span>
+  }
+
+  private Coordinate toCoordinate(T row) {
+<span class="fc" id="L342">    return new Coordinate(round(row.getLon()), round(row.getLat()), row.getTimestamp().toEpochMilli());</span>
+  }
+
+  private LineString simplify(List&lt;Coordinate&gt; coordinates) {
+<span class="fc" id="L346">    return geometrySimplifier.simplifyGeometry(coordinates);</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

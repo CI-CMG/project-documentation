@@ -1,0 +1,17 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,GeometrySimplifier,0,24,0,0,0,6,0,2,0,2
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,PointState,27,29,0,0,1,12,1,7,1,7
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,GeoJsonMultiLineWriter,86,155,2,6,19,49,3,10,2,7
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,SimplifiedPointCountExceededException,0,4,0,0,0,2,0,1,0,1
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,GeoJsonMultiLineParser.new TypeReference() {...},0,3,0,0,0,1,0,1,0,1
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,GeoJsonMultiLineParser,198,901,27,62,38,197,25,43,4,19
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,ValidationRuntimeException,0,5,0,0,0,2,0,1,0,1
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,AntimeridianUtils,177,247,20,22,19,36,15,11,1,4
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,GeometryProperties,0,45,0,0,0,14,0,7,0,7
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,BaseRowListener,6,895,3,99,1,183,3,69,0,21
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,ValidationException,16,9,0,0,4,3,2,1,2,1
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,TracklineProcessor,0,35,0,2,0,12,0,3,0,2
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,GeoJsonMultiLineProcessor,21,69,0,0,6,17,0,5,0,5
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,GeometryProperties.Builder,8,80,0,0,2,24,1,10,1,10
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,RowProcessor,0,32,0,0,0,9,0,7,0,7
+io.github.ci-cmg:trackline-simplifier,edu.colorado.cires.cmg.tracklinegen,GeometryFactoryFactory,0,8,0,0,0,1,0,1,0,1
