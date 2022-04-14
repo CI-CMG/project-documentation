@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MultiFileHullMerger.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:h3-hull-generator</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.hullgen</a> &gt; <span class="el_source">MultiFileHullMerger.java</span></div><h1>MultiFileHullMerger.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.hullgen;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.ParseException;
+
+/**
+ * Merges {@link Geometry} from multiple files
+ */
+public class MultiFileHullMerger implements InputFileProcessor{
+
+  private final OutputFileReader outputFileReader;
+  private final GeometryProcessor geometryProcessor;
+
+  /**
+   * Constructor for {@link MultiFileHullMerger}
+   * @param outputFileReader {@link OutputFileReader} for reading {@link Geometry} from input {@link File}
+   * @param geometryProcessor {@link GeometryProcessor} for processing geometries
+   */
+<span class="fc" id="L27">  public MultiFileHullMerger(OutputFileReader outputFileReader, GeometryProcessor geometryProcessor) {</span>
+<span class="fc" id="L28">    this.outputFileReader = outputFileReader;</span>
+<span class="fc" id="L29">    this.geometryProcessor = geometryProcessor;</span>
+<span class="fc" id="L30">  }</span>
+
+  /**
+   * Merges {@link Geometry} from directory of files
+   * @param file input {@link File}
+   * @return {@link Geometry} containing merged geometry
+   * @throws IOException if input {@link File} cannot be found
+   */
+  @Override
+  public Geometry process(File file) throws IOException {
+<span class="fc" id="L40">    List&lt;File&gt; inputFiles = Files.walk(file.toPath())</span>
+<span class="fc" id="L41">        .filter(path -&gt; path.getFileName().toString().endsWith(outputFileReader.getExt()))</span>
+<span class="fc" id="L42">        .map(Path::toFile)</span>
+<span class="fc" id="L43">        .collect(Collectors.toList());</span>
+
+<span class="fc" id="L45">    Geometry hull = null;</span>
+
+    try {
+<span class="fc bfc" id="L48" title="All 2 branches covered.">      for (File inputFile : inputFiles) {</span>
+<span class="fc" id="L49">        Geometry geometry = outputFileReader.read(inputFile);</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        if (hull == null) {</span>
+<span class="fc" id="L51">          hull = geometry;</span>
+<span class="fc" id="L52">          continue;</span>
+        }
+<span class="fc" id="L54">        hull = geometryProcessor.mergeGeometryOutlines(new ArrayList&lt;&gt;(Collections.singleton(geometry)), hull);</span>
+<span class="fc" id="L55">      }</span>
+<span class="fc" id="L56">      return hull;</span>
+<span class="nc" id="L57">    } catch (ParseException e) {</span>
+<span class="nc" id="L58">      throw new IllegalStateException(&quot;Geometry could no be parsed from file: &quot; + file.getName());</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
