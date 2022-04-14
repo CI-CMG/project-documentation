@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PolarProcessor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:polar-processor</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.polarprocessor</a> &gt; <span class="el_source">PolarProcessor.java</span></div><h1>PolarProcessor.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.polarprocessor;
+
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Optional;
+import java.util.Set;
+import org.apache.commons.math3.util.Precision;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryCollection;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.LinearRing;
+import org.locationtech.jts.geom.MultiLineString;
+import org.locationtech.jts.geom.MultiPolygon;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
+import org.locationtech.spatial4j.shape.jts.JtsGeometry;
+
+/**
+ * Splits JTS geometries across the meridian and anti-meridian near the Earth’s poles
+ */
+<span class="nc" id="L25">public class PolarProcessor {</span>
+
+
+  private static final int PRECISION = 11;
+
+  private static Coordinate preSplitTranslateCoordinate(Coordinate coordinate, boolean arctic) {
+
+<span class="fc" id="L32">    double originalY = coordinate.getY();</span>
+
+    double distance;
+<span class="fc bfc" id="L35" title="All 2 branches covered.">    if (arctic) {</span>
+<span class="fc" id="L36">      distance = 90D - originalY;</span>
+    } else {
+<span class="fc" id="L38">      distance = 90D + originalY;</span>
+    }
+
+<span class="fc" id="L41">    double angle = coordinate.getX() + 90D;</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">    if(angle &gt; 180D) {</span>
+<span class="fc" id="L43">      angle = angle - 360D;</span>
+    }
+
+<span class="fc" id="L46">    double x = distance * Math.cos(Math.toRadians(angle)) + 180D;</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">    if (x &gt; 180) {</span>
+<span class="fc" id="L48">      x = x - 360D;</span>
+    }
+<span class="fc" id="L50">    double y = distance * Math.sin(Math.toRadians(angle));</span>
+
+<span class="fc" id="L52">    return new Coordinate(Precision.round(x, PRECISION), Precision.round(y, PRECISION));</span>
+  }
+
+
+  private static Coordinate postSplitTranslateCoordinate(Coordinate coordinate, boolean arctic) {
+<span class="fc" id="L57">    double originalX = coordinate.getX();</span>
+<span class="fc" id="L58">    double x = coordinate.getX();</span>
+<span class="fc" id="L59">    double y = coordinate.getY();</span>
+
+<span class="fc" id="L61">    x = x + 180D;</span>
+
+<span class="fc bfc" id="L63" title="All 2 branches covered.">    if (x &gt; 180D) {</span>
+<span class="fc" id="L64">      x = x - 360D;</span>
+    }
+
+<span class="fc" id="L67">    double distance = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));</span>
+<span class="fc" id="L68">    double angle = Math.toDegrees(Math.atan2(y, x)) - 90D;</span>
+
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">    if (angle &gt; 180D) {</span>
+<span class="nc" id="L71">      angle = angle - 360D;</span>
+    }
+<span class="fc bfc" id="L73" title="All 2 branches covered.">    if (angle &lt; -180D) {</span>
+<span class="fc" id="L74">      angle = angle + 360D;</span>
+    }
+
+<span class="fc bfc" id="L77" title="All 2 branches covered.">    if (distance == 0D) {</span>
+<span class="fc" id="L78">      angle = 180D;</span>
+    }
+
+<span class="fc bfc" id="L81" title="All 2 branches covered.">    if (Math.abs(angle) == 180D) {</span>
+<span class="fc" id="L82">      angle = 180D;</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">      if (originalX &lt; 0D) {</span>
+<span class="fc" id="L84">        angle = angle * -1;</span>
+      }
+    }
+
+<span class="fc bfc" id="L88" title="All 2 branches covered.">    if (arctic) {</span>
+<span class="fc" id="L89">      distance = 90D - distance;</span>
+    } else {
+<span class="fc" id="L91">      distance = distance - 90D;</span>
+    }
+
+<span class="fc" id="L94">    return new Coordinate(Precision.round(angle, PRECISION), Precision.round(distance, PRECISION));</span>
+  }
+
+  private static LinearRing preSplitTranslateLineString(LinearRing lineString, GeometryFactory geometryFactory, boolean arctic) {
+<span class="fc" id="L98">    Coordinate[] coordinates = new Coordinate[lineString.getNumPoints()];</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">    for (int n = 0; n &lt; lineString.getNumPoints(); n++) {</span>
+<span class="fc" id="L100">      coordinates[n] = preSplitTranslateCoordinate(lineString.getCoordinateN(n), arctic);</span>
+    }
+<span class="fc" id="L102">    return geometryFactory.createLinearRing(coordinates);</span>
+  }
+
+  private static Coordinate[] postSplitTranslateCoordinateArray(LineString lineString, boolean arctic) {
+<span class="fc" id="L106">    Coordinate[] coordinates = new Coordinate[lineString.getNumPoints()];</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">    for (int n = 0; n &lt; lineString.getNumPoints(); n++) {</span>
+<span class="fc" id="L108">      coordinates[n] = postSplitTranslateCoordinate(lineString.getCoordinateN(n), arctic);</span>
+    }
+<span class="fc" id="L110">    return coordinates;</span>
+  }
+
+  private static LineString postSplitTranslateLineString(LineString lineString, GeometryFactory geometryFactory, boolean arctic) {
+<span class="nc" id="L114">    return geometryFactory.createLineString(postSplitTranslateCoordinateArray(lineString, arctic));</span>
+  }
+
+  private static LinearRing postSplitTranslateLinearRing(LineString lineString, GeometryFactory geometryFactory, boolean arctic) {
+<span class="fc" id="L118">    return geometryFactory.createLinearRing(postSplitTranslateCoordinateArray(lineString, arctic));</span>
+  }
+
+  private static Polygon postSplitTranslatePolygon(Polygon geometry, GeometryFactory geometryFactory, boolean arctic) {
+<span class="fc" id="L122">    LinearRing[] holes = new LinearRing[geometry.getNumInteriorRing()];</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">    for (int n = 0; n &lt; geometry.getNumInteriorRing(); n++) {</span>
+<span class="nc" id="L124">      holes[n] = postSplitTranslateLinearRing(geometry.getInteriorRingN(n), geometryFactory, arctic);</span>
+    }
+<span class="fc" id="L126">    return geometryFactory.createPolygon(postSplitTranslateLinearRing(geometry.getExteriorRing(), geometryFactory, arctic), holes);</span>
+  }
+
+  /**
+   * Translates {@link Polygon} coordinates before splitting
+   * @param polygon {@link Polygon} to translate
+   * @param geometryFactory {@link GeometryFactory} for creating translated polygons
+   * @param arctic whether {@link Polygon} lies within arctic circle
+   * @return translated {@link Polygon}
+   */
+  static Polygon preSplitTranslatePolygon(Polygon polygon, GeometryFactory geometryFactory, boolean arctic) {
+<span class="fc" id="L137">    LinearRing[] holes = new LinearRing[polygon.getNumInteriorRing()];</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">    for (int n = 0; n &lt; polygon.getNumInteriorRing(); n++) {</span>
+<span class="nc" id="L139">      holes[n] = preSplitTranslateLineString(polygon.getInteriorRingN(n), geometryFactory, arctic);</span>
+    }
+<span class="fc" id="L141">    return geometryFactory.createPolygon(preSplitTranslateLineString(polygon.getExteriorRing(), geometryFactory, arctic), holes);</span>
+  }
+
+  /**
+   * Splits polygon across anti-meridian
+   * @param translated {@link Polygon} to split
+   * @return {@link Geometry} split across the anti-meridian
+   */
+  static Geometry split180(Polygon translated) {
+<span class="fc" id="L150">    JtsGeometry jtsGeometry = new JtsGeometry(translated, JtsSpatialContext.GEO, true, false);</span>
+<span class="fc" id="L151">    return jtsGeometry.getGeom();</span>
+  }
+
+  private static Coordinate[] addPolarCoordinateCoordinateArray(LineString lineString, GeometryFactory geometryFactory) {
+<span class="fc" id="L155">    LinkedList&lt;Coordinate&gt; coordinates = new LinkedList&lt;&gt;();</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">    for (int n = 0; n &lt; lineString.getNumPoints(); n++) {</span>
+<span class="fc" id="L157">      Coordinate coordinate = lineString.getCoordinateN(n);</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">      if (coordinates.isEmpty()) {</span>
+<span class="fc" id="L159">        coordinates.add(coordinate);</span>
+      } else {
+<span class="fc" id="L161">        Point neg = geometryFactory.createPoint(new Coordinate(-180D, 0D));</span>
+<span class="fc" id="L162">        Point pos = geometryFactory.createPoint(new Coordinate(180D, 0D));</span>
+<span class="fc" id="L163">        LineString seg = geometryFactory.createLineString(new Coordinate[]{coordinates.getLast(), coordinate});</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        if (seg.intersects(neg)) {</span>
+<span class="fc" id="L165">          coordinates.add(neg.getCoordinate());</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        } else if (seg.intersects(pos)) {</span>
+<span class="fc" id="L167">          coordinates.add(pos.getCoordinate());</span>
+        }
+<span class="fc" id="L169">        coordinates.add(coordinate);</span>
+      }
+    }
+<span class="fc" id="L172">    return coordinates.toArray(new Coordinate[0]);</span>
+  }
+
+  private static LineString addPolarCoordinateLineString(LineString lineString, GeometryFactory geometryFactory) {
+<span class="nc" id="L176">    return geometryFactory.createLineString(addPolarCoordinateCoordinateArray(lineString, geometryFactory));</span>
+  }
+
+  private static LinearRing addPolarCoordinateLinearRing(LineString lineString, GeometryFactory geometryFactory) {
+<span class="fc" id="L180">    return geometryFactory.createLinearRing(addPolarCoordinateCoordinateArray(lineString, geometryFactory));</span>
+  }
+
+  private static LinearRing toRing(LineString lineString, GeometryFactory geometryFactory) {
+<span class="nc" id="L184">    Coordinate[] coordinates = new Coordinate[lineString.getNumPoints()];</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">    for (int n = 0; n &lt; lineString.getNumPoints(); n++) {</span>
+<span class="nc" id="L186">      coordinates[n] = lineString.getCoordinateN(n);</span>
+    }
+<span class="nc" id="L188">    return geometryFactory.createLinearRing(coordinates);</span>
+  }
+
+  private static Polygon addPolarCoordinatePolygon(Polygon polygon, GeometryFactory geometryFactory) {
+<span class="fc" id="L192">    LineString ext = polygon.getExteriorRing();</span>
+<span class="fc" id="L193">    LinearRing ring = addPolarCoordinateLinearRing(ext, geometryFactory);</span>
+<span class="fc" id="L194">    LinearRing[] holes = new LinearRing[polygon.getNumInteriorRing()];</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">    for (int n = 0; n &lt; polygon.getNumInteriorRing(); n++) {</span>
+<span class="nc" id="L196">      holes[n] = toRing(polygon.getInteriorRingN(n), geometryFactory);</span>
+    }
+<span class="fc" id="L198">    return geometryFactory.createPolygon(ring, holes);</span>
+  }
+
+  private static MultiPolygon addPolarCoordinateMultiPolygon(MultiPolygon geometry, GeometryFactory geometryFactory) {
+<span class="fc" id="L202">    Polygon[] polygons = new Polygon[geometry.getNumGeometries()];</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">    for (int n = 0; n &lt; geometry.getNumGeometries(); n++) {</span>
+<span class="fc" id="L204">      polygons[n] = addPolarCoordinatePolygon((Polygon) geometry.getGeometryN(n), geometryFactory);</span>
+    }
+<span class="fc" id="L206">    return geometryFactory.createMultiPolygon(polygons);</span>
+  }
+
+  /**
+   * Generates {@link Geometry} with polar coordinates
+   * @param geometry {@link Geometry} without polar coordinates
+   * @param geometryFactory {@link GeometryFactory} for generating translated {@link Geometry}
+   * @return {@link Geometry} with polar coordinates
+   */
+  static Geometry addPolarCoordinate(Geometry geometry, GeometryFactory geometryFactory) {
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">    if (geometry instanceof Polygon) {</span>
+<span class="nc" id="L217">      return addPolarCoordinatePolygon((Polygon) geometry, geometryFactory);</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">    } else if (geometry instanceof MultiPolygon) {</span>
+<span class="fc" id="L219">      return addPolarCoordinateMultiPolygon((MultiPolygon) geometry, geometryFactory);</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">    } else if (geometry instanceof LineString) {</span>
+<span class="nc" id="L221">      return addPolarCoordinateLineString((LineString) geometry, geometryFactory);</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">    } else if (geometry instanceof MultiLineString) {</span>
+<span class="nc" id="L223">      MultiLineString collection = (MultiLineString) geometry;</span>
+<span class="nc" id="L224">      LineString[] geometries = new LineString[collection.getNumGeometries()];</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">      for (int n = 0; n &lt; collection.getNumGeometries(); n++) {</span>
+<span class="nc" id="L226">        geometries[n] = addPolarCoordinateLineString((LineString) collection.getGeometryN(n), geometryFactory);</span>
+      }
+<span class="nc" id="L228">      return geometryFactory.createMultiLineString(geometries);</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">    } else if (geometry instanceof Point) {</span>
+<span class="nc" id="L230">      return geometry;</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">    } else if (geometry instanceof GeometryCollection) {</span>
+<span class="nc" id="L232">      GeometryCollection collection = (GeometryCollection) geometry;</span>
+<span class="nc" id="L233">      Geometry[] geometries = new Geometry[collection.getNumGeometries()];</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">      for (int n = 0; n &lt; collection.getNumGeometries(); n++) {</span>
+<span class="nc" id="L235">        geometries[n] = addPolarCoordinate(collection.getGeometryN(n), geometryFactory);</span>
+      }
+<span class="nc" id="L237">      return geometryFactory.createGeometryCollection(geometries);</span>
+    } else {
+<span class="nc" id="L239">      throw new IllegalStateException(&quot;Unsupported geometry: &quot; + geometry);</span>
+    }
+  }
+
+  /**
+   * Translates {@link Polygon} after splitting
+   * @param geometry Split {@link Geometry}
+   * @param geometryFactory {@link GeometryFactory} for generating translated {@link Geometry}
+   * @param arctic whether {@link Geometry} lies within arctic circle
+   * @return translated {@link Geometry}
+   */
+  static Geometry postSplitTranslateGeometry(Geometry geometry, GeometryFactory geometryFactory, boolean arctic) {
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">    if (geometry instanceof Polygon) {</span>
+<span class="nc" id="L252">      return postSplitTranslatePolygon((Polygon) geometry, geometryFactory, arctic);</span>
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">    } else if (geometry instanceof MultiPolygon) {</span>
+<span class="fc" id="L254">      return postSplitTranslateMultiPolygon((MultiPolygon) geometry, geometryFactory, arctic);</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">    } else if (geometry instanceof LineString) {</span>
+<span class="nc" id="L256">      return postSplitTranslateLineString((LineString) geometry, geometryFactory, arctic);</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">    } else if (geometry instanceof MultiLineString) {</span>
+<span class="nc" id="L258">      MultiLineString collection = (MultiLineString) geometry;</span>
+<span class="nc" id="L259">      LineString[] geometries = new LineString[collection.getNumGeometries()];</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">      for (int n = 0; n &lt; collection.getNumGeometries(); n++) {</span>
+<span class="nc" id="L261">        geometries[n] = postSplitTranslateLineString((LineString) collection.getGeometryN(n), geometryFactory, arctic);</span>
+      }
+<span class="nc" id="L263">      return geometryFactory.createMultiLineString(geometries);</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">    } else if (geometry instanceof Point) {</span>
+<span class="nc" id="L265">      return geometryFactory.createPoint(postSplitTranslateCoordinate(geometry.getCoordinate(), arctic));</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">    } else if (geometry instanceof GeometryCollection) {</span>
+<span class="nc" id="L267">      GeometryCollection collection = (GeometryCollection) geometry;</span>
+<span class="nc" id="L268">      Geometry[] geometries = new Geometry[collection.getNumGeometries()];</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">      for (int n = 0; n &lt; collection.getNumGeometries(); n++) {</span>
+<span class="nc" id="L270">        geometries[n] = postSplitTranslateGeometry(collection.getGeometryN(n), geometryFactory, arctic);</span>
+      }
+<span class="nc" id="L272">      return geometryFactory.createGeometryCollection(geometries);</span>
+    } else {
+<span class="nc" id="L274">      throw new IllegalStateException(&quot;Unsupported geometry: &quot; + geometry);</span>
+    }
+  }
+
+  private static MultiPolygon postSplitTranslateMultiPolygon(MultiPolygon geometry, GeometryFactory geometryFactory, boolean arctic) {
+<span class="fc" id="L279">    Polygon[] polygons = new Polygon[geometry.getNumGeometries()];</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">    for (int n = 0; n &lt; geometry.getNumGeometries(); n++) {</span>
+<span class="fc" id="L281">      polygons[n] = postSplitTranslatePolygon((Polygon) geometry.getGeometryN(n), geometryFactory, arctic);</span>
+    }
+<span class="fc" id="L283">    return geometryFactory.createMultiPolygon(polygons);</span>
+  }
+
+  /**
+   * Splits JTS geometries across the meridian and anti-meridian near the Earth’s poles
+   * @param polygon {@link Polygon} to split
+   * @param geometryFactory {@link Geometry} for generating split components of polygon
+   * @return {@link Geometry} if splitting {@link Polygon} produces results different from original {@link Polygon}
+   */
+  public static Optional&lt;Geometry&gt; splitPolar(Polygon polygon, GeometryFactory geometryFactory) {
+<span class="fc" id="L293">    boolean arctic = isArctic(polygon);</span>
+<span class="fc" id="L294">    return isPolar(polygon, geometryFactory)</span>
+<span class="fc" id="L295">        .map(preSplit -&gt; postSplitTranslateGeometry(addPolarCoordinate(split180(preSplit), geometryFactory), geometryFactory, arctic));</span>
+  }
+
+  private static boolean isArctic(Polygon polygon) {
+<span class="fc" id="L299">    Envelope envelope = polygon.getEnvelopeInternal();</span>
+<span class="fc" id="L300">    double nDist = 90D - envelope.getMaxY();</span>
+<span class="fc" id="L301">    double sDist = 90D + envelope.getMinY();</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">    return nDist &lt;= sDist;</span>
+  }
+
+  private static Coordinate shiftCoordinate(Coordinate c) {
+<span class="fc" id="L306">    c = c.copy();</span>
+<span class="fc" id="L307">    double x = c.getX();</span>
+<span class="fc" id="L308">    x = x + 180D;</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">    if (x &gt; 180D) {</span>
+<span class="fc" id="L310">      x = x - 360D;</span>
+    }
+<span class="fc" id="L312">    c.setX(x);</span>
+<span class="fc" id="L313">    return c;</span>
+  }
+
+  private static Optional&lt;Polygon&gt; isPolar(Polygon polygon, GeometryFactory geometryFactory) {
+
+<span class="fc" id="L318">    polygon = preSplitTranslatePolygon(polygon, geometryFactory, isArctic(polygon));</span>
+
+<span class="fc" id="L320">    Set&lt;Coordinate&gt; crossings = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L321">    LineString mask = geometryFactory.createLineString(new Coordinate[]{new Coordinate(0D, 0D), new Coordinate(0D, 360D)});</span>
+<span class="fc" id="L322">    Point origin = geometryFactory.createPoint(new Coordinate(0D, 0D));</span>
+
+<span class="fc" id="L324">    LineString ext = polygon.getExteriorRing();</span>
+<span class="fc bfc" id="L325" title="All 2 branches covered.">    for (int i = 0; i &lt; ext.getNumPoints(); i++) {</span>
+<span class="fc" id="L326">      Coordinate c = shiftCoordinate(ext.getCoordinateN(i));</span>
+<span class="pc bpc" id="L327" title="1 of 4 branches missed.">      if (c.getX() == 0D &amp;&amp; c.getY() == 0D) {</span>
+<span class="nc" id="L328">        return Optional.empty();  //If polygon contains the pole, it should already be split.</span>
+      }
+<span class="fc bfc" id="L330" title="All 2 branches covered.">      if (i == 0) {</span>
+<span class="fc" id="L331">        continue;</span>
+      }
+<span class="fc" id="L333">      Coordinate c1 = shiftCoordinate(ext.getCoordinateN(i - 1));</span>
+<span class="fc" id="L334">      LineString segment = geometryFactory.createLineString(new Coordinate[]{c1, c});</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">      if(segment.intersects(origin)) {</span>
+<span class="fc" id="L336">        return Optional.empty();  //If polygon contains the pole, it should already be split.</span>
+      }
+<span class="fc" id="L338">      Geometry crossing = segment.intersection(mask);</span>
+<span class="fc bfc" id="L339" title="All 2 branches covered.">      if(crossing instanceof Point) {</span>
+<span class="fc" id="L340">        crossings.add(crossing.getCoordinate());</span>
+      }
+
+    }
+<span class="fc bfc" id="L344" title="All 2 branches covered.">    if (crossings.size() % 2 == 1) {</span>
+<span class="fc" id="L345">      return Optional.of(polygon);</span>
+    }
+<span class="fc" id="L347">    return Optional.empty();</span>
+  }
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
