@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AntimeridianUtils.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:trackline-simplifier</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.tracklinegen</a> &gt; <span class="el_source">AntimeridianUtils.java</span></div><h1>AntimeridianUtils.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.tracklinegen;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import org.geotools.referencing.GeodeticCalculator;
+import org.geotools.referencing.datum.DefaultEllipsoid;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryCollection;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
+import org.locationtech.spatial4j.shape.jts.JtsGeometry;
+
+public final class AntimeridianUtils {
+  private AntimeridianUtils(){
+
+  }
+  public static List&lt;Coordinate&gt; splitAm(Coordinate last, Coordinate coordinate,  GeometryFactory geometryFactory) {
+<span class="fc" id="L24">    double x = coordinate.getX();</span>
+<span class="fc" id="L25">    double y = coordinate.getY();</span>
+<span class="fc bfc" id="L26" title="All 4 branches covered.">    if (x == 180D || x == -180D) {</span>
+<span class="pc bpc" id="L27" title="1 of 4 branches missed.">      if (last.getX() == 180D || last.getX() == -180D) {</span>
+<span class="fc" id="L28">        return Collections.singletonList(new Coordinate(last.getX(), y, coordinate.getZ()));</span>
+      }
+
+<span class="fc" id="L31">      double sign = Math.signum(last.getX());</span>
+<span class="fc" id="L32">      return Arrays.asList(</span>
+          last,
+          new Coordinate(180D * sign, y),
+          new Coordinate(180D * sign * -1, y)
+      );
+    }
+
+    List&lt;Coordinate&gt; split;
+<span class="fc bfc" id="L40" title="All 8 branches covered.">    if ((coordinate.getX() &lt; 0 &amp;&amp; last.getX() &gt; 0) || (coordinate.getX() &gt; 0 &amp;&amp; last.getX() &lt; 0)) {</span>
+<span class="fc" id="L41">      LineString lineString = geometryFactory.createLineString(new Coordinate[]{last, coordinate});</span>
+<span class="fc" id="L42">      Geometry geometry = new JtsGeometry(lineString, JtsSpatialContext.GEO, true, true).getGeom();</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">      if (geometry instanceof LineString) {</span>
+<span class="fc" id="L44">        return Collections.singletonList(coordinate);</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">      } else if (geometry instanceof GeometryCollection) {</span>
+<span class="fc" id="L46">        split = geometryParse(coordinate, last, (GeometryCollection) geometry);</span>
+      } else {
+<span class="nc" id="L48">        throw new IllegalStateException(</span>
+<span class="nc" id="L49">            String.format(&quot;An error occurred splitting AM, type: %s from coordinates (%f, %f, %s) to (%f, %f, %s)&quot;,</span>
+<span class="nc" id="L50">                geometry.toString(),</span>
+<span class="nc" id="L51">                coordinate.getX(), coordinate.getY(), Instant.ofEpochMilli((long) coordinate.getZ()),</span>
+<span class="nc" id="L52">                last.getX(), last.getY(), Instant.ofEpochMilli((long) last.getZ())</span>
+            ));
+      }
+<span class="fc" id="L55">    } else {</span>
+<span class="fc" id="L56">      split = Collections.singletonList(coordinate);</span>
+    }
+<span class="fc" id="L58">    return split;</span>
+  }
+  private static Coordinate resolveCoordinate(LineString lineString, Coordinate last) {
+<span class="nc bnc" id="L61" title="All 2 branches missed.">    if (lineString.getCoordinateN(0).equals(last)) {</span>
+<span class="nc" id="L62">      return lineString.getCoordinateN(1);</span>
+    }
+<span class="nc" id="L64">    return lineString.getCoordinateN(0);</span>
+  }
+  private static List&lt;Coordinate&gt; geometryParse(Coordinate coordinate, Coordinate last, GeometryCollection geometry) {
+<span class="fc" id="L67">    Geometry l1 = geometry.getGeometryN(0);</span>
+<span class="fc" id="L68">    Geometry l2 = geometry.getGeometryN(1);</span>
+
+<span class="pc bpc" id="L70" title="2 of 4 branches missed.">    if (l1 instanceof LineString &amp;&amp; l2 instanceof LineString) {</span>
+<span class="fc" id="L71">      return geometryParse(coordinate, last, (LineString) l1, (LineString) l2, geometry);</span>
+<span class="nc bnc" id="L72" title="All 4 branches missed.">    } else if (l1 instanceof LineString &amp;&amp; l2 instanceof Point) {</span>
+<span class="nc" id="L73">      return Collections.singletonList(resolveCoordinate((LineString) l1, last));</span>
+<span class="nc bnc" id="L74" title="All 4 branches missed.">    } else if (l2 instanceof LineString &amp;&amp; l1 instanceof Point) {</span>
+<span class="nc" id="L75">      return Collections.singletonList(resolveCoordinate((LineString) l2, last));</span>
+    } else {
+<span class="nc" id="L77">      throw new IllegalStateException(</span>
+<span class="nc" id="L78">          String.format(&quot;An error occurred splitting AM, type: %s from coordinates (%f, %f, %s) to (%f, %f, %s)&quot;,</span>
+<span class="nc" id="L79">              geometry.toString(),</span>
+<span class="nc" id="L80">              coordinate.getX(), coordinate.getY(), Instant.ofEpochMilli((long) coordinate.getZ()),</span>
+<span class="nc" id="L81">              last.getX(), last.getY(), Instant.ofEpochMilli((long) last.getZ())</span>
+          ));
+    }
+  }
+
+  private static List&lt;Coordinate&gt; geometryParse(Coordinate coordinate, Coordinate last, LineString l1, LineString l2, Geometry geometry) {
+<span class="fc" id="L87">    List&lt;Coordinate&gt; split = new ArrayList&lt;&gt;(4);</span>
+<span class="pc bpc" id="L88" title="1 of 4 branches missed.">    if (l1.getCoordinateN(0).equals(last) || l2.getCoordinateN(1).equals(coordinate)) {</span>
+<span class="fc" id="L89">      split.add(l1.getCoordinateN(0));</span>
+<span class="fc" id="L90">      split.add(l1.getCoordinateN(1));</span>
+<span class="fc" id="L91">      split.add(l2.getCoordinateN(0));</span>
+<span class="fc" id="L92">      split.add(l2.getCoordinateN(1));</span>
+<span class="pc bpc" id="L93" title="3 of 4 branches missed.">    } else if (l2.getCoordinateN(0).equals(last) || l1.getCoordinateN(1).equals(coordinate)) {</span>
+<span class="fc" id="L94">      split.add(l2.getCoordinateN(0));</span>
+<span class="fc" id="L95">      split.add(l2.getCoordinateN(1));</span>
+<span class="fc" id="L96">      split.add(l1.getCoordinateN(0));</span>
+<span class="fc" id="L97">      split.add(l1.getCoordinateN(1));</span>
+    } else {
+<span class="nc" id="L99">      throw new IllegalStateException(&quot;Unable to determine AM split order: &quot; + geometry +</span>
+          &quot; coordinate: &quot; + coordinate + &quot; last: &quot; + last + &quot; L1: &quot; + l1 + &quot; l2: &quot; + l2);
+    }
+<span class="fc" id="L102">    return split;</span>
+  }
+
+  public static double getDistance(Coordinate c1, Coordinate c2) {
+<span class="fc" id="L106">    GeodeticCalculator calc = new GeodeticCalculator(DefaultEllipsoid.WGS84);</span>
+<span class="fc" id="L107">    calc.setStartingGeographicPoint(c1.getX(), c1.getY());</span>
+<span class="fc" id="L108">    calc.setDestinationGeographicPoint(c2.getX(), c2.getY());</span>
+<span class="fc" id="L109">    return calc.getOrthodromicDistance();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

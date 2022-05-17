@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GeoJsonMultiLineParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:trackline-simplifier</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.tracklinegen</a> &gt; <span class="el_source">GeoJsonMultiLineParser.java</span></div><h1>GeoJsonMultiLineParser.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.tracklinegen;
+
+import static edu.colorado.cires.cmg.tracklinegen.AntimeridianUtils.getDistance;
+import static edu.colorado.cires.cmg.tracklinegen.AntimeridianUtils.splitAm;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.io.Writer;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import org.geotools.referencing.GeodeticCalculator;
+import org.geotools.referencing.datum.DefaultEllipsoid;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateXYZM;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryCollection;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
+import org.locationtech.spatial4j.shape.jts.JtsGeometry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class GeoJsonMultiLineParser {
+
+<span class="fc" id="L40">  private static final Logger LOGGER = LoggerFactory.getLogger(GeoJsonMultiLineParser.class);</span>
+  private static final double METERS_PER_NMILE = 1852D;
+  private static final double SECONDS_PER_HOUR = 3600D;
+  private static final double KN_PER_MPS = SECONDS_PER_HOUR / METERS_PER_NMILE;
+
+<span class="fc" id="L45">  private static final TypeReference&lt;List&lt;Double&gt;&gt; LIST_DOUBLE = new TypeReference&lt;List&lt;Double&gt;&gt;() {</span>
+  };
+
+  private final ObjectMapper objectMapper;
+<span class="fc" id="L49">  private final GeometryFactory geometryFactory = GeometryFactoryFactory.create();</span>
+  private final DecimalFormat format;
+  private final double maxAllowedSpeedKnts;
+
+<span class="fc" id="L53">  private Envelope westBoundingBox = new Envelope();</span>
+<span class="fc" id="L54">  private Envelope eastBoundingBox = new Envelope();</span>
+<span class="fc" id="L55">  private boolean crossedAntimeridian = false;</span>
+<span class="fc" id="L56">  private double distanceM = 0;</span>
+<span class="fc" id="L57">  private long count = 0;</span>
+<span class="fc" id="L58">  private double avgSpeedM = 0;</span>
+<span class="fc" id="L59">  private GeometryProperties properties = null;</span>
+<span class="fc" id="L60">  private ArrayList&lt;Double&gt; bbox = null;</span>
+<span class="fc" id="L61">  private Coordinate lastCoordinate = null;</span>
+<span class="fc" id="L62">  private Coordinate absoluteLastCoordinate = null;</span>
+
+<span class="fc" id="L64">  public GeoJsonMultiLineParser(ObjectMapper objectMapper, int precision, double maxAllowedSpeedKnts) {</span>
+<span class="fc" id="L65">    this.objectMapper = objectMapper;</span>
+<span class="fc" id="L66">    StringBuilder sb = new StringBuilder(&quot;0.&quot;);</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">    for (int i = 1; i &lt;= precision; i++) {</span>
+<span class="fc" id="L68">      sb.append(&quot;#&quot;);</span>
+    }
+<span class="fc" id="L70">    format = new DecimalFormat(sb.toString(), DecimalFormatSymbols.getInstance(Locale.ENGLISH));</span>
+<span class="fc" id="L71">    this.maxAllowedSpeedKnts = maxAllowedSpeedKnts;</span>
+<span class="fc" id="L72">  }</span>
+
+  private void updateLastCoordinate(Coordinate coordinate) {
+<span class="fc" id="L75">    lastCoordinate = coordinate;</span>
+<span class="fc" id="L76">    absoluteLastCoordinate = coordinate;</span>
+<span class="fc" id="L77">  }</span>
+
+  private void resetLastCoordinate() {
+<span class="fc" id="L80">    lastCoordinate = null;</span>
+<span class="fc" id="L81">  }</span>
+
+  private static double mpsToKnots(double metersPerSecond) {
+<span class="fc" id="L84">    return metersPerSecond * KN_PER_MPS;</span>
+  }
+
+  private void copyInternal(JsonParser jsonParser, JsonGenerator jsonGenerator) throws IOException {
+<span class="nc bnc" id="L88" title="All 3 branches missed.">    switch (jsonParser.getCurrentToken()) {</span>
+      case START_OBJECT:
+<span class="nc" id="L90">        copyObject(jsonParser, jsonGenerator);</span>
+<span class="nc" id="L91">        break;</span>
+      case START_ARRAY:
+<span class="nc" id="L93">        copyArray(jsonParser, jsonGenerator);</span>
+<span class="nc" id="L94">        break;</span>
+      default:
+<span class="nc" id="L96">        jsonGenerator.copyCurrentEvent(jsonParser);</span>
+        break;
+    }
+<span class="nc" id="L99">  }</span>
+
+  private void copyArray(JsonParser jsonParser, JsonGenerator jsonGenerator) throws IOException {
+<span class="nc" id="L102">    jsonGenerator.copyCurrentEvent(jsonParser); //start array</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">    while (jsonParser.nextToken() != JsonToken.END_ARRAY) {</span>
+<span class="nc" id="L104">      copyInternal(jsonParser, jsonGenerator);</span>
+    }
+<span class="nc" id="L106">    jsonGenerator.copyCurrentEvent(jsonParser); //end array</span>
+<span class="nc" id="L107">  }</span>
+
+  private void copyObject(JsonParser jsonParser, JsonGenerator jsonGenerator) throws IOException {
+<span class="nc" id="L110">    jsonGenerator.copyCurrentEvent(jsonParser); //start object</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">    while (jsonParser.nextToken() != JsonToken.END_OBJECT) {</span>
+<span class="nc" id="L112">      copyInternal(jsonParser, jsonGenerator);</span>
+    }
+<span class="nc" id="L114">    jsonGenerator.copyCurrentEvent(jsonParser); //end object</span>
+<span class="nc" id="L115">  }</span>
+
+  public void parse(JsonParser jsonParser, JsonGenerator jsonGenerator, Writer wktWriter) throws IOException, ValidationException {
+<span class="fc" id="L118">    parse(jsonParser, jsonGenerator, wktWriter, null);</span>
+<span class="fc" id="L119">  }</span>
+
+  public void parse(JsonParser jsonParser, JsonGenerator jsonGenerator, Writer wktWriter, Map&lt;String, Object&gt; additionalProperties)
+      throws IOException, ValidationException {
+
+<span class="fc" id="L124">    jsonParser.nextToken();</span>
+<span class="fc" id="L125">    jsonGenerator.copyCurrentEvent(jsonParser); //start object</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">    if (jsonParser.getCurrentToken() != JsonToken.START_OBJECT) {</span>
+<span class="nc" id="L127">      throw new IllegalArgumentException(&quot;Not a JSON object&quot;);</span>
+    }
+
+<span class="fc bfc" id="L130" title="All 2 branches covered.">    while (jsonParser.nextToken() != JsonToken.END_OBJECT) {</span>
+
+<span class="fc" id="L132">      String fieldName = jsonParser.getCurrentName();</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">      if (&quot;type&quot;.equals(fieldName)) {</span>
+<span class="fc" id="L134">        jsonGenerator.copyCurrentEvent(jsonParser);</span>
+<span class="fc" id="L135">        verifyFeatureType(jsonParser, jsonGenerator, &quot;Feature&quot;);</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">      } else if (&quot;geometry&quot;.equals(fieldName)) {</span>
+<span class="fc" id="L137">        jsonGenerator.copyCurrentEvent(jsonParser);</span>
+<span class="fc" id="L138">        processGeometry(jsonParser, jsonGenerator, wktWriter);</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">      } else if (&quot;properties&quot;.equals(fieldName)) {</span>
+<span class="fc" id="L140">        jsonParser.nextToken();</span>
+<span class="fc" id="L141">        properties = objectMapper.readValue(jsonParser, GeometryProperties.class);</span>
+      } else {
+<span class="nc" id="L143">        jsonGenerator.copyCurrentEvent(jsonParser);</span>
+<span class="nc" id="L144">        copyEverythingElse(jsonParser, jsonGenerator);</span>
+      }
+<span class="fc" id="L146">    }</span>
+
+<span class="fc bfc" id="L148" title="All 2 branches covered.">    if (bbox != null) {</span>
+<span class="fc" id="L149">      jsonGenerator.writeFieldName(&quot;bbox&quot;);</span>
+<span class="fc" id="L150">      objectMapper.writeValue(jsonGenerator, bbox);</span>
+    }
+
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">    if (properties == null) {</span>
+<span class="nc" id="L154">      properties = GeometryProperties.Builder.configure().build();</span>
+    }
+
+<span class="fc" id="L157">    GeometryProperties.Builder propertiesBuilder = GeometryProperties.Builder.configure(properties)</span>
+<span class="fc" id="L158">        .withDistanceM(distanceM)</span>
+<span class="fc" id="L159">        .withAvgSpeedMPS(avgSpeedM);</span>
+
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">    if (additionalProperties != null) {</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">      for (Entry&lt;String, Object&gt; entry : additionalProperties.entrySet()) {</span>
+<span class="nc" id="L163">        propertiesBuilder.withOtherField(entry.getKey(), entry.getValue());</span>
+<span class="nc" id="L164">      }</span>
+    }
+
+<span class="fc" id="L167">    properties = propertiesBuilder.build();</span>
+
+<span class="fc" id="L169">    jsonGenerator.writeFieldName(&quot;properties&quot;);</span>
+<span class="fc" id="L170">    objectMapper.writeValue(jsonGenerator, properties);</span>
+
+<span class="fc" id="L172">    jsonGenerator.writeEndObject();</span>
+
+<span class="fc" id="L174">  }</span>
+
+  private void processGeometry(JsonParser jsonParser, JsonGenerator jsonGenerator, Writer wktWriter) throws IOException, ValidationException {
+<span class="fc" id="L177">    jsonParser.nextToken();</span>
+<span class="fc" id="L178">    jsonGenerator.copyCurrentEvent(jsonParser); //start object</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">    if (jsonParser.getCurrentToken() != JsonToken.START_OBJECT) {</span>
+<span class="nc" id="L180">      throw new IllegalArgumentException(&quot;Geometry was not an object&quot;);</span>
+    }
+
+<span class="fc" id="L183">    String featureType = null;</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">    while (jsonParser.nextToken() != JsonToken.END_OBJECT) {</span>
+<span class="fc" id="L185">      jsonGenerator.copyCurrentEvent(jsonParser);</span>
+<span class="fc" id="L186">      String fieldName = jsonParser.getCurrentName();</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">      if (&quot;type&quot;.equals(fieldName)) {</span>
+<span class="fc" id="L188">        featureType = verifyFeatureType(jsonParser, jsonGenerator, &quot;MultiLineString&quot;, &quot;Point&quot;);</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">        if (featureType.equals(&quot;MultiLineString&quot;)) {</span>
+<span class="fc" id="L190">          wktWriter.write(&quot;MULTILINESTRING &quot;);</span>
+        } else {
+<span class="fc" id="L192">          wktWriter.write(&quot;POINT &quot;);</span>
+        }
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">      } else if (&quot;coordinates&quot;.equals(fieldName)) {</span>
+<span class="fc" id="L195">        processCoordinates(jsonParser, jsonGenerator, wktWriter, featureType);</span>
+<span class="fc" id="L196">        writeBBox(jsonGenerator);</span>
+      } else {
+<span class="nc" id="L198">        copyEverythingElse(jsonParser, jsonGenerator);</span>
+      }
+<span class="fc" id="L200">    }</span>
+<span class="fc" id="L201">    jsonGenerator.copyCurrentEvent(jsonParser); //end object</span>
+<span class="fc" id="L202">  }</span>
+
+  private void processCoordinates(JsonParser jsonParser, JsonGenerator jsonGenerator, Writer wktWriter, String type)
+      throws IOException, ValidationException {
+<span class="fc bfc" id="L206" title="All 2 branches covered.">    if (type.equals(&quot;MultiLineString&quot;)) {</span>
+<span class="fc" id="L207">      long lineStringCounter = 0;</span>
+<span class="fc" id="L208">      jsonParser.nextToken();</span>
+<span class="fc" id="L209">      jsonGenerator.copyCurrentEvent(jsonParser); //start array</span>
+<span class="fc" id="L210">      wktWriter.write(&quot;(&quot;); //start multi line string</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">      if (jsonParser.getCurrentToken() != JsonToken.START_ARRAY) {</span>
+<span class="nc" id="L212">        throw new IllegalArgumentException(&quot;coordinates was not an array&quot;);</span>
+      }
+<span class="fc bfc" id="L214" title="All 2 branches covered.">      while (jsonParser.nextToken() != JsonToken.END_ARRAY) {</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        if (lineStringCounter &gt; 0) {</span>
+<span class="fc" id="L216">          wktWriter.write(&quot;,&quot;); //line string separator</span>
+        }
+<span class="fc" id="L218">        processLineString(jsonParser, jsonGenerator, wktWriter);</span>
+<span class="fc" id="L219">        lineStringCounter++;</span>
+      }
+<span class="fc" id="L221">      jsonGenerator.copyCurrentEvent(jsonParser); //end array</span>
+<span class="fc" id="L222">      wktWriter.write(&quot;)&quot;); // end multi line string</span>
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">    } else if (type.equals(&quot;Point&quot;)) {</span>
+<span class="fc" id="L224">      jsonParser.nextToken();</span>
+<span class="fc" id="L225">      wktWriter.write(&quot;(&quot;);</span>
+<span class="fc" id="L226">      processCoordinate(jsonParser, jsonGenerator, wktWriter);</span>
+<span class="fc" id="L227">      wktWriter.write(&quot; )&quot;);</span>
+    } else {
+<span class="nc" id="L229">      throw new IllegalStateException(&quot;Unsupported type: &quot; + type);</span>
+    }
+<span class="fc" id="L231">  }</span>
+
+  private Coordinate arrayToCoordinate(List&lt;Double&gt; coordArray) {
+    Coordinate coordinate;
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">    if (coordArray.size() &gt;= 4) {</span>
+<span class="nc" id="L236">      coordinate = new CoordinateXYZM(coordArray.get(0), coordArray.get(1), coordArray.get(2), coordArray.get(3));</span>
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">    } else if (coordArray.size() == 3) {</span>
+<span class="fc" id="L238">      coordinate = new Coordinate(coordArray.get(0), coordArray.get(1), coordArray.get(2));</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">    } else if (coordArray.size() == 2) {</span>
+<span class="nc" id="L240">      coordinate = new Coordinate(coordArray.get(0), coordArray.get(1));</span>
+    } else {
+<span class="nc" id="L242">      throw new IllegalArgumentException(&quot;Invalid coordinate: &quot; + coordArray);</span>
+    }
+<span class="fc" id="L244">    return coordinate;</span>
+  }
+
+  private void writeArray(JsonGenerator jsonGenerator, Writer wktWriter, Coordinate coordinate) throws IOException {
+<span class="fc" id="L248">    jsonGenerator.writeStartArray();</span>
+<span class="fc" id="L249">    jsonGenerator.writeNumber(format.format(coordinate.getX()));</span>
+<span class="fc" id="L250">    jsonGenerator.writeNumber(format.format(coordinate.getY()));</span>
+<span class="fc" id="L251">    wktWriter.write(new StringBuilder().append(&quot; &quot;).append(format.format(coordinate.getX())).toString());</span>
+<span class="fc" id="L252">    wktWriter.write(new StringBuilder().append(&quot; &quot;).append(format.format(coordinate.getY())).toString());</span>
+<span class="fc" id="L253">    jsonGenerator.writeEndArray();</span>
+<span class="fc" id="L254">  }</span>
+
+  private void writeArray(JsonGenerator jsonGenerator, Writer wktWriter, List&lt;Double&gt; coordinate) throws IOException {
+<span class="fc" id="L257">    jsonGenerator.writeStartArray();</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">    for (Double value : coordinate.subList(0, 2)) {</span>
+<span class="fc" id="L259">      jsonGenerator.writeNumber(format.format(value));</span>
+<span class="fc" id="L260">      wktWriter.write(new StringBuilder().append(&quot; &quot;).append(format.format(value)).toString());</span>
+<span class="fc" id="L261">    }</span>
+<span class="fc" id="L262">    jsonGenerator.writeEndArray();</span>
+<span class="fc" id="L263">  }</span>
+
+  private double getSpeed(Coordinate c1, Coordinate c2, double m) throws ValidationException {
+<span class="fc" id="L266">    double s = (c2.getZ() - c1.getZ()) / 1000D;</span>
+<span class="fc" id="L267">    double metersPerSecond = m / s;</span>
+
+<span class="fc" id="L269">    double knots = mpsToKnots(metersPerSecond);</span>
+<span class="fc bfc" id="L270" title="All 4 branches covered.">    if (maxAllowedSpeedKnts &gt; 0 &amp;&amp; knots &gt; maxAllowedSpeedKnts) {</span>
+<span class="fc" id="L271">      throw new ValidationException(</span>
+<span class="fc" id="L272">          String.format(&quot;Speed from (%f, %f, %s) to (%f, %f, %s) was %f knots, which exceeded allowed maximum of %f knots&quot;,</span>
+<span class="fc" id="L273">              c1.getX(), c1.getY(), Instant.ofEpochMilli((long) c1.getZ()),</span>
+<span class="fc" id="L274">              c2.getX(), c2.getY(), Instant.ofEpochMilli((long) c2.getZ()),</span>
+<span class="fc" id="L275">              knots,</span>
+<span class="fc" id="L276">              maxAllowedSpeedKnts</span>
+          ));
+    }
+<span class="fc" id="L279">    return metersPerSecond;</span>
+  }
+
+  private void updateStats(double m, double v) {
+<span class="fc" id="L283">    distanceM += m;</span>
+<span class="fc" id="L284">    count++;</span>
+<span class="fc" id="L285">    avgSpeedM = avgSpeedM + (v - avgSpeedM) / count;</span>
+<span class="fc" id="L286">  }</span>
+
+  private void processBoundingBox(Coordinate coordinate) {
+<span class="fc bfc" id="L289" title="All 2 branches covered.">    Envelope bbox = coordinate.getX() &lt; 0 ? westBoundingBox : eastBoundingBox;</span>
+<span class="fc" id="L290">    bbox.expandToInclude(coordinate);</span>
+<span class="fc" id="L291">  }</span>
+
+  private void writeBBox(JsonGenerator jsonGenerator) throws IOException {
+
+    double minY;
+    double maxY;
+    double minX;
+    double maxX;
+
+<span class="fc bfc" id="L300" title="All 2 branches covered.">    if (!crossedAntimeridian) {</span>
+<span class="fc" id="L301">      Envelope boundingBox = new Envelope(westBoundingBox);</span>
+<span class="fc" id="L302">      boundingBox.expandToInclude(eastBoundingBox);</span>
+<span class="fc" id="L303">      minY = boundingBox.getMinY();</span>
+<span class="fc" id="L304">      maxY = boundingBox.getMaxY();</span>
+<span class="fc" id="L305">      minX = boundingBox.getMinX();</span>
+<span class="fc" id="L306">      maxX = boundingBox.getMaxX();</span>
+<span class="fc" id="L307">    } else {</span>
+<span class="fc" id="L308">      minY = Math.min(westBoundingBox.getMinY(), eastBoundingBox.getMinY());</span>
+<span class="fc" id="L309">      maxY = Math.max(westBoundingBox.getMaxY(), eastBoundingBox.getMaxY());</span>
+<span class="fc" id="L310">      minX = eastBoundingBox.getMinX();</span>
+<span class="fc" id="L311">      maxX = westBoundingBox.getMaxX();</span>
+    }
+
+    // https://tools.ietf.org/html/rfc7946#section-5.3
+<span class="pc bpc" id="L315" title="3 of 10 branches missed.">    if (count == 0 &amp;&amp; minX == 0.0 &amp;&amp; minY == 0.0 &amp;&amp; maxX == -1.0 &amp;&amp; maxY == -1.0) { // &quot;bbox&quot;:[0.0,0.0,-1.0,-1.0]}</span>
+<span class="fc" id="L316">      return; // don't write bbox if no coordinates were specified</span>
+    }
+    //FIXME
+//    else if (boundingBox.contains(new Coordinate(0, 90))) { // north pole
+//      doubleArray[0] = -180.0;
+//      doubleArray[1] = boundingBox.getMinY();
+//      doubleArray[2] = 180.0;
+//      doubleArray[3] = 90.0;
+
+    // typical bounding box
+//    jsonGenerator.writeFieldName(&quot;bbox&quot;);
+<span class="fc" id="L327">    bbox = new ArrayList&lt;&gt;(4);</span>
+<span class="fc" id="L328">    bbox.add(minX);</span>
+<span class="fc" id="L329">    bbox.add(minY);</span>
+<span class="fc" id="L330">    bbox.add(maxX);</span>
+<span class="fc" id="L331">    bbox.add(maxY);</span>
+
+//    jsonGenerator.writeArray(doubleArray, 0, 4);
+<span class="fc" id="L334">  }</span>
+
+  private void processCoordinate(JsonParser jsonParser, JsonGenerator jsonGenerator, Writer wktWriter) throws IOException, ValidationException {
+<span class="fc" id="L337">    List&lt;Double&gt; coordArray = objectMapper.readValue(jsonParser, LIST_DOUBLE);</span>
+<span class="fc" id="L338">    Coordinate coordinate = arrayToCoordinate(coordArray);</span>
+
+<span class="fc bfc" id="L340" title="All 2 branches covered.">    if (lastCoordinate == null) {</span>
+<span class="fc" id="L341">      writeArray(jsonGenerator, wktWriter, coordArray);</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">      if (absoluteLastCoordinate != null) {</span>
+<span class="fc" id="L343">        List&lt;Coordinate&gt; split = splitAm(absoluteLastCoordinate, coordinate, geometryFactory);</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">        if (split.size() &gt; 1) {</span>
+<span class="fc" id="L345">          crossedAntimeridian = true;</span>
+        }
+<span class="fc" id="L347">      }</span>
+    } else {
+<span class="fc" id="L349">      List&lt;Coordinate&gt; split = splitAm(lastCoordinate, coordinate, geometryFactory);</span>
+<span class="fc bfc" id="L350" title="All 2 branches covered.">      if (split.size() == 1) {</span>
+<span class="fc" id="L351">        wktWriter.write(&quot;,&quot;); //coordinate separator</span>
+<span class="fc" id="L352">        writeArray(jsonGenerator, wktWriter, coordArray);</span>
+<span class="fc" id="L353">        double m = getDistance(lastCoordinate, split.get(0));</span>
+<span class="fc" id="L354">        double v = getSpeed(lastCoordinate, split.get(0), m);</span>
+<span class="fc" id="L355">        updateStats(m, v);</span>
+<span class="fc" id="L356">      } else {</span>
+<span class="fc" id="L357">        crossedAntimeridian = true;</span>
+<span class="fc" id="L358">        wktWriter.write(&quot;,&quot;); //coordinate separator</span>
+<span class="fc" id="L359">        writeArray(jsonGenerator, wktWriter, split.get(1));</span>
+<span class="fc" id="L360">        jsonGenerator.writeEndArray();</span>
+<span class="fc" id="L361">        jsonGenerator.writeStartArray();</span>
+<span class="fc" id="L362">        wktWriter.write(&quot;), (&quot;); //coordinate separator // TODO: if split size == 3</span>
+<span class="fc" id="L363">        writeArray(jsonGenerator, wktWriter, split.get(2));</span>
+        // TODO - if split size == 3 and coordinate is the very last coordinate will result in a lineString with a single point
+<span class="fc bfc" id="L365" title="All 2 branches covered.">        if (split.size() == 4) {</span>
+<span class="fc" id="L366">          wktWriter.write(&quot;,&quot;); //coordinate separator</span>
+<span class="fc" id="L367">          writeArray(jsonGenerator, wktWriter, split.get(3));</span>
+<span class="fc" id="L368">          double m = getDistance(split.get(0), split.get(1));</span>
+<span class="fc" id="L369">          m += getDistance(split.get(2), split.get(3));</span>
+<span class="fc" id="L370">          double v = getSpeed(lastCoordinate, split.get(3), m);</span>
+<span class="fc" id="L371">          updateStats(m, v);</span>
+        }
+      }
+    }
+<span class="fc" id="L375">    processBoundingBox(coordinate);</span>
+<span class="fc" id="L376">    updateLastCoordinate(coordinate);</span>
+<span class="fc" id="L377">  }</span>
+
+  private void processLineString(JsonParser jsonParser, JsonGenerator jsonGenerator, Writer wktWriter) throws IOException, ValidationException {
+<span class="fc" id="L380">    jsonGenerator.copyCurrentEvent(jsonParser); //start array</span>
+<span class="fc" id="L381">    wktWriter.write(&quot;(&quot;); //start line string</span>
+<span class="fc" id="L382">    resetLastCoordinate();</span>
+<span class="fc bfc" id="L383" title="All 2 branches covered.">    while (jsonParser.nextToken() != JsonToken.END_ARRAY) {</span>
+<span class="fc" id="L384">      processCoordinate(jsonParser, jsonGenerator, wktWriter);</span>
+    }
+<span class="fc" id="L386">    jsonGenerator.copyCurrentEvent(jsonParser); //end array</span>
+<span class="fc" id="L387">    wktWriter.write(&quot;)&quot;); //end line string</span>
+<span class="fc" id="L388">  }</span>
+
+  private void copyEverythingElse(JsonParser jsonParser, JsonGenerator jsonGenerator) throws IOException {
+<span class="nc" id="L391">    jsonParser.nextToken();</span>
+<span class="nc bnc" id="L392" title="All 2 branches missed.">    if (jsonParser.getCurrentToken() == JsonToken.START_OBJECT) {</span>
+<span class="nc" id="L393">      copyObject(jsonParser, jsonGenerator);</span>
+    } else {
+<span class="nc" id="L395">      jsonGenerator.copyCurrentEvent(jsonParser);</span>
+    }
+<span class="nc" id="L397">  }</span>
+
+  private String verifyFeatureType(JsonParser jsonParser, JsonGenerator jsonGenerator, String... type) throws IOException {
+<span class="fc" id="L400">    jsonParser.nextToken();</span>
+<span class="fc" id="L401">    jsonGenerator.copyCurrentEvent(jsonParser);</span>
+<span class="fc" id="L402">    String value = jsonParser.getText();</span>
+<span class="pc bpc" id="L403" title="1 of 2 branches missed.">    if (!Arrays.asList(type).contains(value)) {</span>
+<span class="nc" id="L404">      throw new IllegalArgumentException(&quot;Invalid geojson type for AM splitting: &quot; + value);</span>
+    }
+<span class="fc" id="L406">    return value;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
