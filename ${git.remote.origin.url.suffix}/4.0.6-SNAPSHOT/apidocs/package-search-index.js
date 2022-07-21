@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","url":"allpackages-index.html"},{"l":"edu.colorado.cires.cmg.mvt"},{"l":"edu.colorado.cires.cmg.mvt.adapt.jts"},{"l":"edu.colorado.cires.cmg.mvt.adapt.jts.model"},{"l":"edu.colorado.cires.cmg.mvt.build"},{"l":"edu.colorado.cires.cmg.mvt.encoding"},{"l":"edu.colorado.cires.cmg.mvt.util"}]
