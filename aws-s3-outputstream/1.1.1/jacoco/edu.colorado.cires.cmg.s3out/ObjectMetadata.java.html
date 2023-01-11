@@ -1,0 +1,881 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ObjectMetadata.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:aws-s3-outputstream</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.s3out</a> &gt; <span class="el_source">ObjectMetadata.java</span></div><h1>ObjectMetadata.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.s3out;
+
+import java.time.Instant;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
+
+/**
+ * Implementation of {@link ObjectMetadataCustomizer} that allows setting most
+ * AWS SDK object metadata through a builder.
+ */
+public class ObjectMetadata implements ObjectMetadataCustomizer {
+
+  private final String acl;
+  private final String cacheControl;
+  private final String contentDisposition;
+  private final String contentEncoding;
+  private final String contentLanguage;
+  private final String contentType;
+  private final Instant expires;
+  private final String grantFullControl;
+  private final String grantRead;
+  private final String grantReadACP;
+  private final String grantWriteACP;
+  private final Map&lt;String, String&gt; metadata;
+  private final String serverSideEncryption;
+  private final String storageClass;
+  private final String websiteRedirectLocation;
+  private final String sseCustomerAlgorithm;
+  private final String sseCustomerKey;
+  private final String sseCustomerKeyMD5;
+  private final String ssekmsKeyId;
+  private final String ssekmsEncryptionContext;
+  private final Boolean bucketKeyEnabled;
+  private final String requestPayer;
+  private final String tagging;
+  private final String objectLockMode;
+  private final Instant objectLockRetainUntilDate;
+  private final String objectLockLegalHoldStatus;
+  private final String expectedBucketOwner;
+  private final String checksumAlgorithm;
+
+  /**
+   * Returns a new builder for an {@link ObjectMetadata}
+   * @return a new builder for an {@link ObjectMetadata}
+   */
+  public static Builder builder() {
+<span class="fc" id="L49">    return new Builder();</span>
+  }
+
+  private ObjectMetadata(
+      String acl,
+      String cacheControl,
+      String contentDisposition,
+      String contentEncoding,
+      String contentLanguage,
+      String contentType,
+      Instant expires,
+      String grantFullControl,
+      String grantRead,
+      String grantReadACP,
+      String grantWriteACP,
+      Map&lt;String, String&gt; metadata,
+      String serverSideEncryption,
+      String storageClass,
+      String websiteRedirectLocation,
+      String sseCustomerAlgorithm,
+      String sseCustomerKey,
+      String sseCustomerKeyMD5,
+      String ssekmsKeyId,
+      String ssekmsEncryptionContext,
+      Boolean bucketKeyEnabled,
+      String requestPayer,
+      String tagging,
+      String objectLockMode,
+      Instant objectLockRetainUntilDate,
+      String objectLockLegalHoldStatus,
+      String expectedBucketOwner,
+<span class="fc" id="L80">      String checksumAlgorithm) {</span>
+<span class="fc" id="L81">    this.acl = acl;</span>
+<span class="fc" id="L82">    this.cacheControl = cacheControl;</span>
+<span class="fc" id="L83">    this.contentDisposition = contentDisposition;</span>
+<span class="fc" id="L84">    this.contentEncoding = contentEncoding;</span>
+<span class="fc" id="L85">    this.contentLanguage = contentLanguage;</span>
+<span class="fc" id="L86">    this.contentType = contentType;</span>
+<span class="fc" id="L87">    this.expires = expires;</span>
+<span class="fc" id="L88">    this.grantFullControl = grantFullControl;</span>
+<span class="fc" id="L89">    this.grantRead = grantRead;</span>
+<span class="fc" id="L90">    this.grantReadACP = grantReadACP;</span>
+<span class="fc" id="L91">    this.grantWriteACP = grantWriteACP;</span>
+<span class="fc" id="L92">    this.metadata = metadata;</span>
+<span class="fc" id="L93">    this.serverSideEncryption = serverSideEncryption;</span>
+<span class="fc" id="L94">    this.storageClass = storageClass;</span>
+<span class="fc" id="L95">    this.websiteRedirectLocation = websiteRedirectLocation;</span>
+<span class="fc" id="L96">    this.sseCustomerAlgorithm = sseCustomerAlgorithm;</span>
+<span class="fc" id="L97">    this.sseCustomerKey = sseCustomerKey;</span>
+<span class="fc" id="L98">    this.sseCustomerKeyMD5 = sseCustomerKeyMD5;</span>
+<span class="fc" id="L99">    this.ssekmsKeyId = ssekmsKeyId;</span>
+<span class="fc" id="L100">    this.ssekmsEncryptionContext = ssekmsEncryptionContext;</span>
+<span class="fc" id="L101">    this.bucketKeyEnabled = bucketKeyEnabled;</span>
+<span class="fc" id="L102">    this.requestPayer = requestPayer;</span>
+<span class="fc" id="L103">    this.tagging = tagging;</span>
+<span class="fc" id="L104">    this.objectLockMode = objectLockMode;</span>
+<span class="fc" id="L105">    this.objectLockRetainUntilDate = objectLockRetainUntilDate;</span>
+<span class="fc" id="L106">    this.objectLockLegalHoldStatus = objectLockLegalHoldStatus;</span>
+<span class="fc" id="L107">    this.expectedBucketOwner = expectedBucketOwner;</span>
+<span class="fc" id="L108">    this.checksumAlgorithm = checksumAlgorithm;</span>
+<span class="fc" id="L109">  }</span>
+
+  /**
+   * Gets the canned ACL to apply to the object.
+   *
+   * @return the canned ACL to apply to the object.
+   */
+  public String getAcl() {
+<span class="fc" id="L117">    return acl;</span>
+  }
+
+  /**
+   * Gets the caching behavior along the request/reply chain.
+   *
+   * @return the caching behavior along the request/reply chain.
+   */
+  public String getCacheControl() {
+<span class="fc" id="L126">    return cacheControl;</span>
+  }
+
+  /**
+   * Gets presentational information for the object.
+   *
+   * @return presentational information for the object
+   */
+  public String getContentDisposition() {
+<span class="fc" id="L135">    return contentDisposition;</span>
+  }
+
+  /**
+   * Gets content encodings have been applied to the object and thus what decoding mechanisms must be applied to obtain the media-type
+   * referenced by the Content-Type header field.
+   *
+   * @return content encodings have been applied to the object and thus what decoding mechanisms must be applied to obtain the media-type
+   *    referenced by the Content-Type header field.
+   */
+  public String getContentEncoding() {
+<span class="fc" id="L146">    return contentEncoding;</span>
+  }
+
+  /**
+   * Gets the language the content is in.
+   *
+   * @return the language the content is in
+   */
+  public String getContentLanguage() {
+<span class="fc" id="L155">    return contentLanguage;</span>
+  }
+
+  /**
+   * Gets the MIME type describing the format of the object data.
+   *
+   * @return the MIME type describing the format of the object data
+   */
+  public String getContentType() {
+<span class="fc" id="L164">    return contentType;</span>
+  }
+
+  /**
+   * Gets the date and time at which the object is no longer cacheable.
+   *
+   * @return the date and time at which the object is no longer cacheable
+   */
+  public Instant getExpires() {
+<span class="fc" id="L173">    return expires;</span>
+  }
+
+  /**
+   * Gets the grantee READ, READ_ACP, and WRITE_ACP permissions on the object.
+   *
+   * @return the grantee READ, READ_ACP, and WRITE_ACP permissions on the object.
+   */
+  public String getGrantFullControl() {
+<span class="fc" id="L182">    return grantFullControl;</span>
+  }
+
+  /**
+   * Gets grantee state to read the object data and its metadata.
+   *
+   * @return grantee state to read the object data and its metadata.
+   */
+  public String getGrantRead() {
+<span class="fc" id="L191">    return grantRead;</span>
+  }
+
+  /**
+   * Gets grantee state to read the object ACL.
+   *
+   * @return Gets grantee state to read the object ACL
+   */
+  public String getGrantReadACP() {
+<span class="fc" id="L200">    return grantReadACP;</span>
+  }
+
+  /**
+   * Gets grantee state to write the ACL for the applicable object.
+   *
+   * @return grantee state to write the ACL for the applicable object
+   */
+  public String getGrantWriteACP() {
+<span class="fc" id="L209">    return grantWriteACP;</span>
+  }
+
+  /**
+   * Gets an unmodifiable map of metadata to store with the object in S3.
+   * @return an unmodifiable map of metadata to store with the object in S3
+   */
+  public Map&lt;String, String&gt; getMetadata() {
+<span class="fc" id="L217">    return metadata;</span>
+  }
+
+  /**
+   * Gets the server-side encryption algorithm used when storing this object in Amazon S3 (for example, AES256, aws:kms).
+   *
+   * @return the serve-side encryption algorithm used wrhen storing this object in Amazon S3 (for example, AES256, aws:kms)
+   */
+  public String getServerSideEncryption() {
+<span class="fc" id="L226">    return serverSideEncryption;</span>
+  }
+
+  /**
+   * Gets the Storage Class to store newly created objects.
+   * @return the Storage Class to store newly created objects
+   */
+  public String getStorageClass() {
+<span class="fc" id="L234">    return storageClass;</span>
+  }
+
+  /**
+   * Gets the redirects requests for this object.
+   *
+   * @return the redirects requests for this object.
+   */
+  public String getWebsiteRedirectLocation() {
+<span class="fc" id="L243">    return websiteRedirectLocation;</span>
+  }
+
+  /**
+   * Gets the algorithm to use to when encrypting the object (for example, AES256).
+   *
+   * @return the algorithm to use to when encrypting the object (for example, AES256).
+   */
+  public String getSseCustomerAlgorithm() {
+<span class="fc" id="L252">    return sseCustomerAlgorithm;</span>
+  }
+
+  /**
+   * Gets the customer-provided encryption key for Amazon S3 to use in encrypting data. This value is used to store the object and then it is
+   * discarded; Amazon S3 does not store the encryption key. The key must be appropriate for use with the algorithm specified in the
+   * x-amz-server-side-encryption-customer-algorithm header.
+   *
+   * @return the customer-provided encryption key for Amazon S3 to use in encrypting data. This value is used to store the object and then it is
+   *    discarded; Amazon S3 does not store the encryption key. The key must be appropriate for use with the algorithm specified in the
+   *    x-amz-server-side-encryption-customer-algorithm header.
+   */
+  public String getSseCustomerKey() {
+<span class="fc" id="L265">    return sseCustomerKey;</span>
+  }
+
+  /**
+   * Gets the 128-bit MD5 digest of the encryption key according to RFC 1321. Amazon S3 uses this header for a message integrity check to
+   * ensure that the encryption key was transmitted without error.
+   *
+   * @return the 128-bit MD5 digest of the encryption key according to RFC 1321. Amazon S3 uses this header for a message integrity check to
+   *    ensure that the encryption key was transmitted without error.
+   */
+  public String getSseCustomerKeyMD5() {
+<span class="fc" id="L276">    return sseCustomerKeyMD5;</span>
+  }
+
+  /**
+   * Gets the ID of the symmetric customer managed key to use for object encryption. All GET and PUT requests for an object protected by Amazon
+   * Web Services KMS will fail if not made via SSL or using SigV4.
+   *
+   * @return the ID of the symmetric customer managed key to use for object encryption. All GET and PUT requests for an object protected by Amazon
+   *    Web Services KMS will fail if not made via SSL or using SigV4.
+   */
+  public String getSsekmsKeyId() {
+<span class="fc" id="L287">    return ssekmsKeyId;</span>
+  }
+
+  /**
+   * Gets the Amazon Web Services KMS Encryption Context to use for object encryption. The value of this header is a base64-encoded UTF-8
+   * string holding JSON with the encryption context key-value pairs.
+   *
+   * @return the Amazon Web Services KMS Encryption Context to use for object encryption. The value of this header is a base64-encoded UTF-8
+   *    string holding JSON with the encryption context key-value pairs.
+   */
+  public String getSsekmsEncryptionContext() {
+<span class="fc" id="L298">    return ssekmsEncryptionContext;</span>
+  }
+
+  /**
+   * Gets whether Amazon S3 should use an S3 Bucket Key for object encryption with server-side encryption using AWS KMS (SSE-KMS). Setting this
+   * header to true causes Amazon S3 to use an S3 Bucket Key for object encryption with SSE-KMS.
+   *
+   * @return whether Amazon S3 should use an S3 Bucket Key for object encryption with server-side encryption using AWS KMS (SSE-KMS). Setting this
+   *    header to true causes Amazon S3 to use an S3 Bucket Key for object encryption with SSE-KMS.
+   */
+  public Boolean getBucketKeyEnabled() {
+<span class="fc" id="L309">    return bucketKeyEnabled;</span>
+  }
+
+  /**
+   * Gets the value of the RequestPayer property for this object.
+   *
+   * @return the value of the RequestPayer property for this object.
+   */
+  public String getRequestPayer() {
+<span class="fc" id="L318">    return requestPayer;</span>
+  }
+
+  /**
+   * Gets the tag-set for the object. The tag-set must be encoded as URL Query parameters.
+   *
+   * @return the tag-set for the object. The tag-set must be encoded as URL Query parameters.
+   */
+  public String getTagging() {
+<span class="fc" id="L327">    return tagging;</span>
+  }
+
+  /**
+   * Gets the Object Lock mode that you want to apply to the uploaded object.
+   *
+   * @return the Object Lock mode that you want to apply to the uploaded object.
+   */
+  public String getObjectLockMode() {
+<span class="fc" id="L336">    return objectLockMode;</span>
+  }
+
+  /**
+   * Gets the date and time when you want the Object Lock to expire.
+   *
+   * @return the date and time when you want the Object Lock to expire.
+   */
+  public Instant getObjectLockRetainUntilDate() {
+<span class="fc" id="L345">    return objectLockRetainUntilDate;</span>
+  }
+
+  /**
+   * Gets whether you want to apply a legal hold to the uploaded object.
+   *
+   * @return whether you want to apply a legal hold to the uploaded object.
+   */
+  public String getObjectLockLegalHoldStatus() {
+<span class="fc" id="L354">    return objectLockLegalHoldStatus;</span>
+  }
+
+  /**
+   * Gets the account ID of the expected bucket owner. If the bucket is owned by a different account, the request fails with the HTTP status code 403
+   * Forbidden (access denied).
+   *
+   * @return the account ID of the expected bucket owner. If the bucket is owned by a different account, the request fails with the HTTP status code 403
+   *    Forbidden (access denied).
+   */
+  public String getExpectedBucketOwner() {
+<span class="fc" id="L365">    return expectedBucketOwner;</span>
+  }
+
+  /**
+   * Get the algorithm you want Amazon S3 to use to create the checksum for the object.
+   *
+   * @return the algorithm you want Amazon S3 to use to create the checksum for the object
+   */
+  public String getChecksumAlgorithm() {
+<span class="fc" id="L374">    return checksumAlgorithm;</span>
+  }
+
+  @Override
+  public void apply(CreateMultipartUploadRequest.Builder builder) {
+<span class="fc bfc" id="L379" title="All 2 branches covered.">    if (acl != null) {</span>
+<span class="fc" id="L380">      builder.acl(acl);</span>
+    }
+<span class="fc bfc" id="L382" title="All 2 branches covered.">    if (cacheControl != null) {</span>
+<span class="fc" id="L383">      builder.cacheControl(cacheControl);</span>
+    }
+<span class="fc bfc" id="L385" title="All 2 branches covered.">    if (contentDisposition != null) {</span>
+<span class="fc" id="L386">      builder.contentDisposition(contentDisposition);</span>
+    }
+<span class="fc bfc" id="L388" title="All 2 branches covered.">    if (contentEncoding != null) {</span>
+<span class="fc" id="L389">      builder.contentEncoding(contentEncoding);</span>
+    }
+<span class="fc bfc" id="L391" title="All 2 branches covered.">    if (contentLanguage != null) {</span>
+<span class="fc" id="L392">      builder.contentLanguage(contentLanguage);</span>
+    }
+<span class="fc bfc" id="L394" title="All 2 branches covered.">    if (contentType != null) {</span>
+<span class="fc" id="L395">      builder.contentType(contentType);</span>
+    }
+<span class="fc bfc" id="L397" title="All 2 branches covered.">    if (expires != null) {</span>
+<span class="fc" id="L398">      builder.expires(expires);</span>
+    }
+<span class="fc bfc" id="L400" title="All 2 branches covered.">    if (grantFullControl != null) {</span>
+<span class="fc" id="L401">      builder.grantFullControl(grantFullControl);</span>
+    }
+<span class="fc bfc" id="L403" title="All 2 branches covered.">    if (grantRead != null) {</span>
+<span class="fc" id="L404">      builder.grantRead(grantRead);</span>
+    }
+<span class="fc bfc" id="L406" title="All 2 branches covered.">    if (grantReadACP != null) {</span>
+<span class="fc" id="L407">      builder.grantReadACP(grantReadACP);</span>
+    }
+<span class="fc bfc" id="L409" title="All 2 branches covered.">    if (grantWriteACP != null) {</span>
+<span class="fc" id="L410">      builder.grantWriteACP(grantWriteACP);</span>
+    }
+<span class="fc bfc" id="L412" title="All 2 branches covered.">    if (!metadata.isEmpty()) {</span>
+<span class="fc" id="L413">      builder.metadata(metadata);</span>
+    }
+<span class="fc bfc" id="L415" title="All 2 branches covered.">    if (serverSideEncryption != null) {</span>
+<span class="fc" id="L416">      builder.serverSideEncryption(serverSideEncryption);</span>
+    }
+<span class="fc bfc" id="L418" title="All 2 branches covered.">    if (storageClass != null) {</span>
+<span class="fc" id="L419">      builder.storageClass(storageClass);</span>
+    }
+<span class="fc bfc" id="L421" title="All 2 branches covered.">    if (websiteRedirectLocation != null) {</span>
+<span class="fc" id="L422">      builder.websiteRedirectLocation(websiteRedirectLocation);</span>
+    }
+<span class="fc bfc" id="L424" title="All 2 branches covered.">    if (sseCustomerAlgorithm != null) {</span>
+<span class="fc" id="L425">      builder.sseCustomerAlgorithm(sseCustomerAlgorithm);</span>
+    }
+<span class="fc bfc" id="L427" title="All 2 branches covered.">    if (sseCustomerKey != null) {</span>
+<span class="fc" id="L428">      builder.sseCustomerKey(sseCustomerKey);</span>
+    }
+<span class="fc bfc" id="L430" title="All 2 branches covered.">    if (sseCustomerKeyMD5 != null) {</span>
+<span class="fc" id="L431">      builder.sseCustomerKeyMD5(sseCustomerKeyMD5);</span>
+    }
+<span class="fc bfc" id="L433" title="All 2 branches covered.">    if (ssekmsKeyId != null) {</span>
+<span class="fc" id="L434">      builder.ssekmsKeyId(ssekmsKeyId);</span>
+    }
+<span class="fc bfc" id="L436" title="All 2 branches covered.">    if (ssekmsEncryptionContext != null) {</span>
+<span class="fc" id="L437">      builder.ssekmsEncryptionContext(ssekmsEncryptionContext);</span>
+    }
+<span class="fc bfc" id="L439" title="All 2 branches covered.">    if (bucketKeyEnabled != null) {</span>
+<span class="fc" id="L440">      builder.bucketKeyEnabled(bucketKeyEnabled);</span>
+    }
+<span class="fc bfc" id="L442" title="All 2 branches covered.">    if (requestPayer != null) {</span>
+<span class="fc" id="L443">      builder.requestPayer(requestPayer);</span>
+    }
+<span class="fc bfc" id="L445" title="All 2 branches covered.">    if (tagging != null) {</span>
+<span class="fc" id="L446">      builder.tagging(tagging);</span>
+    }
+<span class="fc bfc" id="L448" title="All 2 branches covered.">    if (objectLockMode != null) {</span>
+<span class="fc" id="L449">      builder.objectLockMode(objectLockMode);</span>
+    }
+<span class="fc bfc" id="L451" title="All 2 branches covered.">    if (objectLockRetainUntilDate != null) {</span>
+<span class="fc" id="L452">      builder.objectLockRetainUntilDate(objectLockRetainUntilDate);</span>
+    }
+<span class="fc bfc" id="L454" title="All 2 branches covered.">    if (objectLockLegalHoldStatus != null) {</span>
+<span class="fc" id="L455">      builder.objectLockLegalHoldStatus(objectLockLegalHoldStatus);</span>
+    }
+<span class="fc bfc" id="L457" title="All 2 branches covered.">    if (expectedBucketOwner != null) {</span>
+<span class="fc" id="L458">      builder.expectedBucketOwner(expectedBucketOwner);</span>
+    }
+<span class="fc bfc" id="L460" title="All 2 branches covered.">    if (checksumAlgorithm != null) {</span>
+<span class="fc" id="L461">      builder.checksumAlgorithm(checksumAlgorithm);</span>
+    }
+<span class="fc" id="L463">  }</span>
+
+  /**
+   * Builder for an {@link ObjectMetadata}
+   */
+<span class="fc" id="L468">  public static class Builder {</span>
+
+<span class="fc" id="L470">    private Map&lt;String, String&gt; metadata = new HashMap&lt;&gt;();</span>
+    private String acl;
+    private String cacheControl;
+    private String contentDisposition;
+    private String contentEncoding;
+    private String contentLanguage;
+    private String contentType;
+    private Instant expires;
+    private String grantFullControl;
+    private String grantRead;
+    private String grantReadACP;
+    private String grantWriteACP;
+    private String serverSideEncryption;
+    private String storageClass;
+    private String websiteRedirectLocation;
+    private String sseCustomerAlgorithm;
+    private String sseCustomerKey;
+    private String sseCustomerKeyMD5;
+    private String ssekmsKeyId;
+    private String ssekmsEncryptionContext;
+    private Boolean bucketKeyEnabled;
+    private String requestPayer;
+    private String tagging;
+    private String objectLockMode;
+    private Instant objectLockRetainUntilDate;
+    private String objectLockLegalHoldStatus;
+    private String expectedBucketOwner;
+    private String checksumAlgorithm;
+
+    /**
+     * Sets the canned ACL to apply to the object.
+     *
+     * @param acl The canned ACL to apply to the object
+     * @return this Builder
+     */
+    public Builder acl(String acl) {
+<span class="fc" id="L506">      this.acl = acl;</span>
+<span class="fc" id="L507">      return this;</span>
+    }
+
+    /**
+     * Specifies caching behavior along the request/reply chain.
+     *
+     * @param cacheControl Specifies caching behavior along the request/reply chain.
+     * @return this Builder
+     */
+    public Builder cacheControl(String cacheControl) {
+<span class="fc" id="L517">      this.cacheControl = cacheControl;</span>
+<span class="fc" id="L518">      return this;</span>
+    }
+
+    /**
+     * Specifies presentational information for the object.
+     *
+     * @param contentDisposition Specifies presentational information for the object.
+     * @return this Builder
+     */
+    public Builder contentDisposition(String contentDisposition) {
+<span class="fc" id="L528">      this.contentDisposition = contentDisposition;</span>
+<span class="fc" id="L529">      return this;</span>
+    }
+
+    /**
+     * Specifies what content encodings have been applied to the object and thus what decoding mechanisms must be applied to obtain the media-type
+     * referenced by the Content-Type header field.
+     *
+     * @param contentEncoding Specifies what content encodings have been applied to the object and thus what decoding mechanisms must be applied to
+     * obtain the media-type referenced by the Content-Type header field.
+     * @return this Builder
+     */
+    public Builder contentEncoding(String contentEncoding) {
+<span class="fc" id="L541">      this.contentEncoding = contentEncoding;</span>
+<span class="fc" id="L542">      return this;</span>
+    }
+
+    /**
+     * The language the content is in.
+     *
+     * @param contentLanguage The language the content is in.
+     * @return this Builder
+     */
+    public Builder contentLanguage(String contentLanguage) {
+<span class="fc" id="L552">      this.contentLanguage = contentLanguage;</span>
+<span class="fc" id="L553">      return this;</span>
+    }
+
+    /**
+     * A standard MIME type describing the format of the object data. Note: Setting this will override any value set by a {@link
+     * ContentTypeResolver}.
+     *
+     * @param contentType A standard MIME type describing the format of the object data.
+     * @return this Builder
+     */
+    public Builder contentType(String contentType) {
+<span class="fc" id="L564">      this.contentType = contentType;</span>
+<span class="fc" id="L565">      return this;</span>
+    }
+
+    /**
+     * The date and time at which the object is no longer cacheable.
+     *
+     * @param expires The date and time at which the object is no longer cacheable.
+     * @return this Builder
+     */
+    public Builder expires(Instant expires) {
+<span class="fc" id="L575">      this.expires = expires;</span>
+<span class="fc" id="L576">      return this;</span>
+    }
+
+    /**
+     * Gives the grantee READ, READ_ACP, and WRITE_ACP permissions on the object.
+     *
+     * @param grantFullControl Gives the grantee READ, READ_ACP, and WRITE_ACP permissions on the object.
+     * @return this Builder
+     */
+    public Builder grantFullControl(String grantFullControl) {
+<span class="fc" id="L586">      this.grantFullControl = grantFullControl;</span>
+<span class="fc" id="L587">      return this;</span>
+    }
+
+    /**
+     * Allows grantee to read the object data and its metadata.
+     *
+     * @param grantRead Allows grantee to read the object data and its metadata.
+     * @return this Builder
+     */
+    public Builder grantRead(String grantRead) {
+<span class="fc" id="L597">      this.grantRead = grantRead;</span>
+<span class="fc" id="L598">      return this;</span>
+    }
+
+    /**
+     * Allows grantee to read the object ACL.
+     *
+     * @param grantReadACP Allows grantee to read the object ACL.
+     * @return this Builder
+     */
+    public Builder grantReadACP(String grantReadACP) {
+<span class="fc" id="L608">      this.grantReadACP = grantReadACP;</span>
+<span class="fc" id="L609">      return this;</span>
+    }
+
+    /**
+     * Allows grantee to write the ACL for the applicable object.
+     *
+     * @param grantWriteACP Allows grantee to write the ACL for the applicable object.
+     * @return this Builder
+     */
+    public Builder grantWriteACP(String grantWriteACP) {
+<span class="fc" id="L619">      this.grantWriteACP = grantWriteACP;</span>
+<span class="fc" id="L620">      return this;</span>
+    }
+
+    /**
+     * A map of metadata to store with the object in S3. Note: setting this clears any values set by {@link #metadata(String, String)}
+     *
+     * @param metadata A map of metadata to store with the object in S3.
+     * @return this Builder
+     */
+    public Builder metadata(Map&lt;String, String&gt; metadata) {
+<span class="pc bpc" id="L630" title="1 of 2 branches missed.">      if (metadata == null) {</span>
+<span class="nc" id="L631">        metadata = new HashMap&lt;&gt;();</span>
+      }
+<span class="fc" id="L633">      this.metadata = new HashMap&lt;&gt;(metadata);</span>
+<span class="fc" id="L634">      return this;</span>
+    }
+
+    /**
+     * Adds to the map of metadata to store with the object in S3.
+     *
+     * @param key the metadata key
+     * @param value the metadata value
+     * @return this Builder
+     */
+    public Builder metadata(String key, String value) {
+<span class="fc" id="L645">      this.metadata.put(key, value);</span>
+<span class="fc" id="L646">      return this;</span>
+    }
+
+    /**
+     * The server-side encryption algorithm used when storing this object in Amazon S3 (for example, AES256, aws:kms).
+     *
+     * @param serverSideEncryption The server-side encryption algorithm used when storing this object in Amazon S3 (for example, AES256, aws:kms).
+     * @return this Builder
+     */
+    public Builder serverSideEncryption(String serverSideEncryption) {
+<span class="fc" id="L656">      this.serverSideEncryption = serverSideEncryption;</span>
+<span class="fc" id="L657">      return this;</span>
+    }
+
+    /**
+     * By default, Amazon S3 uses the STANDARD Storage Class to store newly created objects. The STANDARD storage class provides high durability and
+     * high availability. Depending on performance needs, you can specify a different Storage Class.
+     *
+     * @param storageClass By default, Amazon S3 uses the STANDARD Storage Class to store newly created objects. The STANDARD storage class provides
+     * high durability and high availability. Depending on performance needs, you can specify a different Storage Class.
+     * @return this Builder
+     */
+    public Builder storageClass(String storageClass) {
+<span class="fc" id="L669">      this.storageClass = storageClass;</span>
+<span class="fc" id="L670">      return this;</span>
+    }
+
+    /**
+     * If the bucket is configured as a website, redirects requests for this object to another object in the same bucket or to an external URL. Amazon
+     * S3 stores the value of this header in the object metadata.
+     *
+     * @param websiteRedirectLocation If the bucket is configured as a website, redirects requests for this object to another object in the same
+     * bucket or to an external URL. Amazon S3 stores the value of this header in the object metadata.
+     * @return this Builder
+     */
+    public Builder websiteRedirectLocation(String websiteRedirectLocation) {
+<span class="fc" id="L682">      this.websiteRedirectLocation = websiteRedirectLocation;</span>
+<span class="fc" id="L683">      return this;</span>
+    }
+
+    /**
+     * Specifies the algorithm to use to when encrypting the object (for example, AES256).
+     *
+     * @param sseCustomerAlgorithm Specifies the algorithm to use to when encrypting the object (for example, AES256).
+     * @return this Builder
+     */
+    public Builder sseCustomerAlgorithm(String sseCustomerAlgorithm) {
+<span class="fc" id="L693">      this.sseCustomerAlgorithm = sseCustomerAlgorithm;</span>
+<span class="fc" id="L694">      return this;</span>
+    }
+
+    /**
+     * Specifies the customer-provided encryption key for Amazon S3 to use in encrypting data. This value is used to store the object and then it is
+     * discarded; Amazon S3 does not store the encryption key. The key must be appropriate for use with the algorithm specified in the
+     * x-amz-server-side-encryption-customer-algorithm header.
+     *
+     * @param sseCustomerKey Specifies the customer-provided encryption key for Amazon S3 to use in encrypting data. This value is used to store the
+     * object and then it is discarded; Amazon S3 does not store the encryption key. The key must be appropriate for use with the algorithm specified
+     * in the x-amz-server-side-encryption-customer-algorithm header.
+     * @return this Builder
+     */
+    public Builder sseCustomerKey(String sseCustomerKey) {
+<span class="fc" id="L708">      this.sseCustomerKey = sseCustomerKey;</span>
+<span class="fc" id="L709">      return this;</span>
+    }
+
+    /**
+     * Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321. Amazon S3 uses this header for a message integrity check to
+     * ensure that the encryption key was transmitted without error.
+     *
+     * @param sseCustomerKeyMD5 Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321. Amazon S3 uses this header for a message
+     * integrity check to ensure that the encryption key was transmitted without error.
+     * @return this Builder
+     */
+    public Builder sseCustomerKeyMD5(String sseCustomerKeyMD5) {
+<span class="fc" id="L721">      this.sseCustomerKeyMD5 = sseCustomerKeyMD5;</span>
+<span class="fc" id="L722">      return this;</span>
+    }
+
+    /**
+     * Specifies the ID of the symmetric customer managed key to use for object encryption. All GET and PUT requests for an object protected by Amazon
+     * Web Services KMS will fail if not made via SSL or using SigV4.
+     *
+     * @param ssekmsKeyId Specifies the ID of the symmetric customer managed key to use for object encryption. All GET and PUT requests for an object
+     * protected by Amazon Web Services KMS will fail if not made via SSL or using SigV4.
+     * @return this Builder
+     */
+    public Builder ssekmsKeyId(String ssekmsKeyId) {
+<span class="fc" id="L734">      this.ssekmsKeyId = ssekmsKeyId;</span>
+<span class="fc" id="L735">      return this;</span>
+    }
+
+    /**
+     * Specifies the Amazon Web Services KMS Encryption Context to use for object encryption. The value of this header is a base64-encoded UTF-8
+     * string holding JSON with the encryption context key-value pairs.
+     *
+     * @param ssekmsEncryptionContext Specifies the Amazon Web Services KMS Encryption Context to use for object encryption. The value of this header
+     * is a base64-encoded UTF-8 string holding JSON with the encryption context key-value pairs.
+     * @return this Builder
+     */
+    public Builder ssekmsEncryptionContext(String ssekmsEncryptionContext) {
+<span class="fc" id="L747">      this.ssekmsEncryptionContext = ssekmsEncryptionContext;</span>
+<span class="fc" id="L748">      return this;</span>
+    }
+
+    /**
+     * Specifies whether Amazon S3 should use an S3 Bucket Key for object encryption with server-side encryption using AWS KMS (SSE-KMS). Setting this
+     * header to true causes Amazon S3 to use an S3 Bucket Key for object encryption with SSE-KMS.
+     *
+     * @param bucketKeyEnabled Specifies whether Amazon S3 should use an S3 Bucket Key for object encryption with server-side encryption using AWS KMS
+     * (SSE-KMS). Setting this header to true causes Amazon S3 to use an S3 Bucket Key for object encryption with SSE-KMS.
+     * @return this Builder
+     */
+    public Builder bucketKeyEnabled(Boolean bucketKeyEnabled) {
+<span class="fc" id="L760">      this.bucketKeyEnabled = bucketKeyEnabled;</span>
+<span class="fc" id="L761">      return this;</span>
+    }
+
+    /**
+     * Sets the value of the RequestPayer property for this object.
+     *
+     * @param requestPayer The new value for the RequestPayer property for this object.
+     * @return this Builder
+     */
+    public Builder requestPayer(String requestPayer) {
+<span class="fc" id="L771">      this.requestPayer = requestPayer;</span>
+<span class="fc" id="L772">      return this;</span>
+    }
+
+    /**
+     * The tag-set for the object. The tag-set must be encoded as URL Query parameters.
+     *
+     * @param tagging The tag-set for the object. The tag-set must be encoded as URL Query parameters.
+     * @return this Builder
+     */
+    public Builder tagging(String tagging) {
+<span class="fc" id="L782">      this.tagging = tagging;</span>
+<span class="fc" id="L783">      return this;</span>
+    }
+
+    /**
+     * Specifies the Object Lock mode that you want to apply to the uploaded object.
+     *
+     * @param objectLockMode Specifies the Object Lock mode that you want to apply to the uploaded object.
+     * @return this Builder
+     */
+    public Builder objectLockMode(String objectLockMode) {
+<span class="fc" id="L793">      this.objectLockMode = objectLockMode;</span>
+<span class="fc" id="L794">      return this;</span>
+    }
+
+    /**
+     * Specifies the date and time when you want the Object Lock to expire.
+     *
+     * @param objectLockRetainUntilDate Specifies the date and time when you want the Object Lock to expire.
+     * @return this Builder
+     */
+    public Builder objectLockRetainUntilDate(Instant objectLockRetainUntilDate) {
+<span class="fc" id="L804">      this.objectLockRetainUntilDate = objectLockRetainUntilDate;</span>
+<span class="fc" id="L805">      return this;</span>
+    }
+
+    /**
+     * Specifies whether you want to apply a legal hold to the uploaded object.
+     *
+     * @param objectLockLegalHoldStatus Specifies whether you want to apply a legal hold to the uploaded object.
+     * @return this Builder
+     */
+    public Builder objectLockLegalHoldStatus(String objectLockLegalHoldStatus) {
+<span class="fc" id="L815">      this.objectLockLegalHoldStatus = objectLockLegalHoldStatus;</span>
+<span class="fc" id="L816">      return this;</span>
+    }
+
+    /**
+     * The account ID of the expected bucket owner. If the bucket is owned by a different account, the request fails with the HTTP status code 403
+     * Forbidden (access denied).
+     *
+     * @param expectedBucketOwner The account ID of the expected bucket owner. If the bucket is owned by a different account, the request fails with
+     * the HTTP status code 403 Forbidden (access denied).
+     * @return this Builder
+     */
+    public Builder expectedBucketOwner(String expectedBucketOwner) {
+<span class="fc" id="L828">      this.expectedBucketOwner = expectedBucketOwner;</span>
+<span class="fc" id="L829">      return this;</span>
+    }
+
+    /**
+     * Indicates the algorithm you want Amazon S3 to use to create the checksum for the object.
+     *
+     * @param checksumAlgorithm Indicates the algorithm you want Amazon S3 to use to create the checksum for the object.
+     * @return this Builder
+     */
+    public Builder checksumAlgorithm(String checksumAlgorithm) {
+<span class="fc" id="L839">      this.checksumAlgorithm = checksumAlgorithm;</span>
+<span class="fc" id="L840">      return this;</span>
+    }
+
+    /**
+     * Builds a new {@link ObjectMetadata} object
+     *
+     * @return a new {@link ObjectMetadata} object
+     */
+    public ObjectMetadata build() {
+<span class="fc" id="L849">      return new ObjectMetadata(</span>
+          acl,
+          cacheControl,
+          contentDisposition,
+          contentEncoding,
+          contentLanguage,
+          contentType,
+          expires,
+          grantFullControl,
+          grantRead,
+          grantReadACP,
+          grantWriteACP,
+<span class="fc" id="L861">          Collections.unmodifiableMap(metadata),</span>
+          serverSideEncryption,
+          storageClass,
+          websiteRedirectLocation,
+          sseCustomerAlgorithm,
+          sseCustomerKey,
+          sseCustomerKeyMD5,
+          ssekmsKeyId,
+          ssekmsEncryptionContext,
+          bucketKeyEnabled,
+          requestPayer,
+          tagging,
+          objectLockMode,
+          objectLockRetainUntilDate,
+          objectLockLegalHoldStatus,
+          expectedBucketOwner,
+          checksumAlgorithm);
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
