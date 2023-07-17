@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InvertCoordinateFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:h3-hull-generator</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.hullgen</a> &gt; <span class="el_source">InvertCoordinateFilter.java</span></div><h1>InvertCoordinateFilter.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.hullgen;
+
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateFilter;
+
+/**
+ * Inverts coordinates belonging to a {@link org.locationtech.jts.geom.Geometry}
+ */
+<span class="fc" id="L9">public class InvertCoordinateFilter implements CoordinateFilter {</span>
+
+  /**
+   *
+   * @param coordinate {@link Coordinate} containing latitude and longitude
+   */
+  @Override
+  public void filter(Coordinate coordinate) {
+<span class="fc" id="L17">    double oldX = coordinate.getX();</span>
+<span class="fc" id="L18">    coordinate.setX(coordinate.getY());</span>
+<span class="fc" id="L19">    coordinate.setY(oldX);</span>
+<span class="fc" id="L20">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
