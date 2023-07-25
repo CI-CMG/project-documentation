@@ -1,0 +1,17 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,BufferedHull,0,19,0,2,0,7,0,3,0,2
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,GeoTiffMetadata,3,109,0,0,1,23,1,9,1,9
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,GeoJSONReader,0,30,0,0,0,7,0,3,0,3
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,CompleteHull,0,4,0,0,0,2,0,1,0,1
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,BaseGeometryProcessor,131,284,16,18,19,54,11,16,0,10
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,WktWriter,4,36,1,1,1,12,1,3,0,3
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,GeoTiffTags,3,0,0,0,1,0,1,0,1,0
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,GeoJSONWriter,4,36,1,1,1,12,1,3,0,3
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,MultiFileHullMerger,14,62,0,4,2,17,0,5,0,3
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,SimplifyingGeometryProcessor,0,111,0,8,0,26,0,9,0,5
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,CSVProcessor,0,69,0,2,0,16,0,4,0,3
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,CompleteGeometryProcessor,0,11,0,0,0,4,0,2,0,2
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,WktReader,0,30,0,0,0,7,0,3,0,3
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,HullGenerator,0,26,0,0,0,8,0,2,0,2
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,GeoTiffProcessor,42,363,8,26,6,74,8,17,0,8
+io.github.ci-cmg:h3-hull-generator,edu.colorado.cires.cmg.hullgen,BaseHull,0,44,0,0,0,11,0,4,0,4

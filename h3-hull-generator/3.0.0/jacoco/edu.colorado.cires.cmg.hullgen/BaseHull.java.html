@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BaseHull.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:h3-hull-generator</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.hullgen</a> &gt; <span class="el_source">BaseHull.java</span></div><h1>BaseHull.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.hullgen;
+
+import com.uber.h3core.util.GeoCoord;
+import java.util.HashSet;
+import java.util.Set;
+import org.locationtech.jts.geom.Geometry;
+
+/**
+ * Base implementation of {@link Hull}
+ */
+public class BaseHull implements Hull{
+
+  protected final GeometryProcessor geometryProcessor;
+<span class="fc" id="L14">  protected Set&lt;Long&gt; points = new HashSet&lt;&gt;();</span>
+  protected Geometry hull;
+
+  /**
+   * Constructor for {@link BaseHull}
+   * @param geometryProcessor {@link GeometryProcessor} for processing JTS geometries from H3 ids
+   */
+<span class="fc" id="L21">  public BaseHull(GeometryProcessor geometryProcessor) {</span>
+<span class="fc" id="L22">    this.geometryProcessor = geometryProcessor;</span>
+<span class="fc" id="L23">  }</span>
+
+  /**
+   * Adds H3 id to point set
+   * @param geoCoord {@link GeoCoord} containing latitude and longitude
+   */
+  @Override
+  public void addPoint(GeoCoord geoCoord) {
+<span class="fc" id="L31">    points.add(geometryProcessor.geoCoordToH3(geoCoord));</span>
+<span class="fc" id="L32">  }</span>
+
+  /**
+   * Generates and merges hulls from H3 ids. Empties {@link HashSet&lt;Long&gt;} of points
+   */
+  @Override
+  public void generateHull() {
+<span class="fc" id="L39">    Geometry geometryOutlines = geometryProcessor.getGeometry(points);</span>
+<span class="fc" id="L40">    points = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L41">    hull = geometryProcessor.mergeGeometryOutlines(geometryOutlines, hull);</span>
+<span class="fc" id="L42">  }</span>
+
+  /**
+   * Gets {@link Geometry} containing hull
+   * @return {@link Geometry} containing hull
+   */
+  @Override
+  public Geometry getHullGeometry() {
+<span class="fc" id="L50">    return hull;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

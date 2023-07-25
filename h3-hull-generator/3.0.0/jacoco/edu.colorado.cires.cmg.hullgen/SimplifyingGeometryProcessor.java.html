@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SimplifyingGeometryProcessor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:h3-hull-generator</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.hullgen</a> &gt; <span class="el_source">SimplifyingGeometryProcessor.java</span></div><h1>SimplifyingGeometryProcessor.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.hullgen;
+
+import com.uber.h3core.H3Core;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.simplify.DouglasPeuckerSimplifier;
+
+/**
+ * Implementation of {@link BaseGeometryProcessor} which simplifies output geometry
+ */
+public class SimplifyingGeometryProcessor extends BaseGeometryProcessor {
+
+  private final double distanceTolerance;
+  private final double deltaDistanceTolerance;
+  private final double maxGeometryPointsAllowed;
+
+  private final boolean keepHoles;
+
+  /**
+   *
+   * @param h3Resolution integer from 0 (the lowest resolution) to 15 (the highest resolution) specifying size of H3 hexagons
+   * @param geometryFactory {@link GeometryFactory} for generating and merging JTS geometries
+   * @param distanceTolerance Douglas-Peucker algorithm distance tolerance
+   * @param deltaDistanceTolerance Granularity of change in distance tolerance for successive attempts of Douglas-Peucker algorithm
+   * @param maxGeometryPointsAllowed maximum allowed points allowed in output {@link Geometry}
+   * @throws IOException if {@link H3Core} cannot create a new instance
+   */
+  public SimplifyingGeometryProcessor(Integer h3Resolution, GeometryFactory geometryFactory, double distanceTolerance, double deltaDistanceTolerance,
+      double maxGeometryPointsAllowed) throws IOException {
+<span class="fc" id="L35">    super(h3Resolution, geometryFactory);</span>
+<span class="fc" id="L36">    this.distanceTolerance = distanceTolerance;</span>
+<span class="fc" id="L37">    this.deltaDistanceTolerance = deltaDistanceTolerance;</span>
+<span class="fc" id="L38">    this.maxGeometryPointsAllowed = maxGeometryPointsAllowed;</span>
+<span class="fc" id="L39">    this.keepHoles = false;</span>
+<span class="fc" id="L40">  }</span>
+
+  /**
+   * Constructor for {@link SimplifyingGeometryProcessor}
+   * @param h3Resolution integer from 0 (the lowest resolution) to 15 (the highest resolution) specifying size of H3 hexagons
+   * @param geometryFactory {@link GeometryFactory} for generating and merging JTS geometries
+   * @param distanceTolerance Douglas-Peucker algorithm distance tolerance
+   * @param deltaDistanceTolerance Granularity of change in distance tolerance for successive attempts of Douglas-Peucker algorithm
+   * @param maxGeometryPointsAllowed maximum allowed points allowed in output {@link Geometry}
+   * @param keepHoles boolean specifying whether to keep holes in the output geometry
+   * @throws IOException if {@link H3Core} cannot create a new instance
+   */
+  public SimplifyingGeometryProcessor(Integer h3Resolution, GeometryFactory geometryFactory, double distanceTolerance, double deltaDistanceTolerance,
+      double maxGeometryPointsAllowed, boolean keepHoles) throws IOException {
+<span class="fc" id="L54">    super(h3Resolution, geometryFactory, keepHoles);</span>
+<span class="fc" id="L55">    this.distanceTolerance = distanceTolerance;</span>
+<span class="fc" id="L56">    this.deltaDistanceTolerance = deltaDistanceTolerance;</span>
+<span class="fc" id="L57">    this.maxGeometryPointsAllowed = maxGeometryPointsAllowed;</span>
+<span class="fc" id="L58">    this.keepHoles = keepHoles;</span>
+<span class="fc" id="L59">  }</span>
+
+  /**
+   * Transforms H3 ids into {@link Geometry}
+   * @param points {@link Collection&lt;Long&gt;} containing H3 ids
+   * @return {@link Geometry} from H3 ids
+   */
+  @Override
+  public Geometry getGeometry(Collection&lt;Long&gt; points) {
+<span class="fc bfc" id="L68" title="All 2 branches covered.">    Collection&lt;Long&gt; geometryPoints = keepHoles ? points : getPointsWithMissingNeighbors(points);</span>
+<span class="fc" id="L69">    return DouglasPeuckerSimplifier.simplify(super.getGeometry(geometryPoints), distanceTolerance);</span>
+  }
+
+  /**
+   * Unions {@link Geometry} and an existing {@link Geometry} into a single {@link Geometry}
+   * @param geometry {@link Geometry} to add
+   * @param existingGeometry existing {@link Geometry}
+   * @return {@link Geometry} containing unions of all input geometry
+   */
+  @Override
+  public Geometry mergeGeometryOutlines(Geometry geometry, Geometry existingGeometry) {
+<span class="fc" id="L80">   Geometry mergedGeometryOutlines = super.mergeGeometryOutlines(geometry, existingGeometry);</span>
+<span class="fc" id="L81">   double mergedGeometryOutlineDistanceTolerance = distanceTolerance;</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">   while (mergedGeometryOutlines.getNumPoints() &gt;= maxGeometryPointsAllowed) {</span>
+<span class="fc" id="L83">     mergedGeometryOutlines = DouglasPeuckerSimplifier.simplify(</span>
+         mergedGeometryOutlines, mergedGeometryOutlineDistanceTolerance
+     );
+<span class="fc" id="L86">     mergedGeometryOutlineDistanceTolerance += deltaDistanceTolerance;</span>
+   }
+<span class="fc" id="L88">   return super.processPolar(mergedGeometryOutlines);</span>
+  }
+
+  private List&lt;Long&gt; getPointsWithMissingNeighbors(Collection&lt;Long&gt; points) {
+<span class="fc" id="L92">    List&lt;Long&gt; pointsWithMissingNeighbors = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">    for (long point : points) {</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">      if (!points.containsAll(h3Core.kRing(point, 1))) {</span>
+<span class="fc" id="L95">        pointsWithMissingNeighbors.add(point);</span>
+      }
+<span class="fc" id="L97">    }</span>
+<span class="fc" id="L98">    return pointsWithMissingNeighbors;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

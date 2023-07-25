@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CSVProcessor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:h3-hull-generator</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.hullgen</a> &gt; <span class="el_source">CSVProcessor.java</span></div><h1>CSVProcessor.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.hullgen;
+
+import com.uber.h3core.util.GeoCoord;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import org.locationtech.jts.geom.Geometry;
+
+/**
+ * Implementation of {@link InputFileProcessor} which computes hulls from CSV coordinates (longitude/latitude column order)
+ */
+public class CSVProcessor implements InputFileProcessor{
+
+  private final String delimiters;
+  private final Hull hull;
+
+  /**
+   * Constructor for {@link CSVProcessor}
+   * @param delimiters regex {@link String} specifying pattern which divides CSV columns
+   * @param hull {@link Hull} for generating hulls from H3 ids
+   */
+<span class="fc" id="L26">  public CSVProcessor(String delimiters, Hull hull) {</span>
+<span class="fc" id="L27">    this.delimiters = delimiters;</span>
+<span class="fc" id="L28">    this.hull = hull;</span>
+<span class="fc" id="L29">  }</span>
+
+  /**
+   * Computes hulls from CSV coordinates
+   * @param file {@link File} containing CSV coordinates
+   * @return {@link Geometry} containing hull
+   * @throws IOException if input {@link File} cannot be found
+   */
+  @Override
+  public Geometry process(File file) throws IOException {
+<span class="fc" id="L39">    try (</span>
+<span class="fc" id="L40">        InputStream inputStream = new FileInputStream(file);</span>
+<span class="fc" id="L41">        InputStreamReader inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L42">        BufferedReader bufferedReader = new BufferedReader(inputStreamReader);</span>
+        ) {
+      String line;
+<span class="fc bfc" id="L45" title="All 2 branches covered.">      while ((line = bufferedReader.readLine()) != null) {</span>
+<span class="fc" id="L46">        GeoCoord geoCoord = csvLineToGeoCoord(line);</span>
+<span class="fc" id="L47">        hull.addPoint(geoCoord);</span>
+<span class="fc" id="L48">      }</span>
+    }
+<span class="fc" id="L50">    hull.generateHull();</span>
+<span class="fc" id="L51">    return hull.getHullGeometry();</span>
+  }
+
+  private GeoCoord csvLineToGeoCoord(String csvLine) {
+<span class="fc" id="L55">    String[] yx = csvLine.split(delimiters);</span>
+<span class="fc" id="L56">    return new GeoCoord(Double.parseDouble(yx[1]), Double.parseDouble(yx[0]));</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
