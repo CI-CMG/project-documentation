@@ -1,0 +1,16 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+io.github.ci-cmg:geometry-tools,edu.colorado.cires.geometrytools.trackline,GeometryGenerator,48,173,1,4,9,43,1,12,0,10
+io.github.ci-cmg:geometry-tools,edu.colorado.cires.geometrytools.trackline,TracklineContext,54,70,2,3,12,21,2,7,0,6
+io.github.ci-cmg:geometry-tools,edu.colorado.cires.geometrytools.trackline,DoubleSerializer,3,43,1,1,1,13,1,5,0,5
+io.github.ci-cmg:geometry-tools,edu.colorado.cires.geometrytools.trackline,ColumnMapping,116,33,16,0,9,12,11,6,3,6
+io.github.ci-cmg:geometry-tools,edu.colorado.cires.geometrytools.trackline,Phase1Processor,0,74,0,0,0,16,0,4,0,4
+io.github.ci-cmg:geometry-tools,edu.colorado.cires.geometrytools.trackline,Delimiter,0,24,0,0,0,3,0,1,0,1
+io.github.ci-cmg:geometry-tools,edu.colorado.cires.geometrytools.trackline,RowListener,0,13,0,0,0,2,0,2,0,2
+io.github.ci-cmg:geometry-tools,edu.colorado.cires.geometrytools.trackline,CsvReaderIterator,35,221,4,22,3,47,4,17,0,7
+io.github.ci-cmg:geometry-tools,edu.colorado.cires.geometrytools.trackline,TimeFormat,0,34,0,0,0,4,0,1,0,1
+io.github.ci-cmg:geometry-tools,edu.colorado.cires.geometrytools.trackline,DataPoint,100,35,15,1,11,10,11,5,3,5
+io.github.ci-cmg:geometry-tools,edu.colorado.cires.geometrytools,OutputType,0,24,0,0,0,3,0,1,0,1
+io.github.ci-cmg:geometry-tools,edu.colorado.cires.geometrytools,SourceType,44,0,0,0,5,0,1,0,1,0
+io.github.ci-cmg:geometry-tools,edu.colorado.cires.geometrytools,VersionProvider,29,0,2,0,5,0,3,0,2,0
+io.github.ci-cmg:geometry-tools,edu.colorado.cires.geometrytools,GeometryTools,19,0,0,0,5,0,3,0,3,0
+io.github.ci-cmg:geometry-tools,edu.colorado.cires.geometrytools,TracklineTools,81,0,4,0,16,0,4,0,2,0

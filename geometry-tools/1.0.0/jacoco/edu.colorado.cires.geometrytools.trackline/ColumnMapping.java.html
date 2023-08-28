@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ColumnMapping.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:geometry-tools</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.geometrytools.trackline</a> &gt; <span class="el_source">ColumnMapping.java</span></div><h1>ColumnMapping.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.geometrytools.trackline;
+
+import java.util.Objects;
+
+public class ColumnMapping {
+
+  private final String longitudeColumn;
+  private final String latitudeColumn;
+  private final String timeColumn;
+  private final TimeFormat timeFormat;
+  private final Delimiter delimiter;
+
+  /**
+   * Creates a new ColumnMapping object to store user preferences for geometry generation
+   *
+   * @param longitudeColumn The column name storing longitude data
+   * @param latitudeColumn The column name storing latitude data
+   * @param timeColumn The column name storing time data
+   * @param timeFormat The format of the time data
+   * @param delimiter The delimiter used in the data file
+   */
+<span class="fc" id="L22">  public ColumnMapping(String longitudeColumn, String latitudeColumn, String timeColumn, TimeFormat timeFormat, Delimiter delimiter) {</span>
+<span class="fc" id="L23">    this.longitudeColumn = longitudeColumn;</span>
+<span class="fc" id="L24">    this.latitudeColumn = latitudeColumn;</span>
+<span class="fc" id="L25">    this.timeColumn = timeColumn;</span>
+<span class="fc" id="L26">    this.timeFormat = timeFormat;</span>
+<span class="fc" id="L27">    this.delimiter = delimiter;</span>
+<span class="fc" id="L28">  }</span>
+
+  /**
+   *
+   * @return The column name storing longitude data
+   */
+  public String getLatitudeColumn() {
+<span class="fc" id="L35">    return latitudeColumn;</span>
+  }
+
+  /**
+   *
+   * @return The column name storing latitude data
+   */
+  public String getLongitudeColumn() {
+<span class="fc" id="L43">    return longitudeColumn;</span>
+  }
+
+  /**
+   *
+   * @return The column name storing time data
+   */
+  public String getTimeColumn() {
+<span class="fc" id="L51">    return timeColumn;</span>
+  }
+
+  /**
+   *
+   * @return The format of the time data
+   */
+  public TimeFormat getTimeFormat() {
+<span class="fc" id="L59">    return timeFormat;</span>
+  }
+
+  /**
+   *
+   * @return The delimiter used in the data file
+   */
+  public Delimiter getDelimiter() {
+<span class="fc" id="L67">    return delimiter;</span>
+  }
+
+  @Override
+  public boolean equals(Object o) {
+<span class="nc bnc" id="L72" title="All 2 branches missed.">    if (this == o) {</span>
+<span class="nc" id="L73">      return true;</span>
+    }
+<span class="nc bnc" id="L75" title="All 4 branches missed.">    if (o == null || getClass() != o.getClass()) {</span>
+<span class="nc" id="L76">      return false;</span>
+    }
+<span class="nc" id="L78">    ColumnMapping that = (ColumnMapping) o;</span>
+<span class="nc bnc" id="L79" title="All 4 branches missed.">    return Objects.equals(longitudeColumn, that.longitudeColumn) &amp;&amp; Objects.equals(latitudeColumn, that.latitudeColumn)</span>
+<span class="nc bnc" id="L80" title="All 6 branches missed.">        &amp;&amp; Objects.equals(timeColumn, that.timeColumn) &amp;&amp; timeFormat == that.timeFormat &amp;&amp; delimiter == that.delimiter;</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L85">    return Objects.hash(longitudeColumn, latitudeColumn, timeColumn, timeFormat, delimiter);</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L90">    return &quot;ColumnMapping{&quot; +</span>
+        &quot;longitudeColumn='&quot; + longitudeColumn + '\'' +
+        &quot;, latitudeColumn='&quot; + latitudeColumn + '\'' +
+        &quot;, timeColumn='&quot; + timeColumn + '\'' +
+        &quot;, timeFormat=&quot; + timeFormat +
+        &quot;, delimiter=&quot; + delimiter +
+        '}';
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

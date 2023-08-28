@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Phase1Processor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:geometry-tools</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.geometrytools.trackline</a> &gt; <span class="el_source">Phase1Processor.java</span></div><h1>Phase1Processor.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.geometrytools.trackline;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.colorado.cires.cmg.tracklinegen.GeometrySimplifier;
+import edu.colorado.cires.cmg.tracklinegen.TracklineProcessor;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import org.locationtech.jts.geom.GeometryFactory;
+
+public class Phase1Processor extends TracklineProcessor&lt;TracklineContext, DataPoint, RowListener&gt; {
+
+  private final long msSplit;
+  private final GeometrySimplifier geometrySimplifier;
+  private final int batchSize;
+  private final int precision;
+  private final ObjectMapper objectMapper;
+  private final OutputStream out;
+  private final InputStream in;
+  private final long maxPoints;
+  private final GeometryFactory geometryFactory;
+  private final ColumnMapping columnMapping;
+
+  public Phase1Processor(
+      long msSplit,
+      GeometrySimplifier geometrySimplifier,
+      int batchSize,
+      int precision,
+      ObjectMapper objectMapper,
+      OutputStream out,
+      InputStream in,
+      long maxPoints,
+<span class="fc" id="L35">      GeometryFactory geometryFactory, ColumnMapping columnMapping) {</span>
+<span class="fc" id="L36">    this.msSplit = msSplit;</span>
+<span class="fc" id="L37">    this.geometrySimplifier = geometrySimplifier;</span>
+<span class="fc" id="L38">    this.batchSize = batchSize;</span>
+<span class="fc" id="L39">    this.precision = precision;</span>
+<span class="fc" id="L40">    this.objectMapper = objectMapper;</span>
+<span class="fc" id="L41">    this.out = out;</span>
+<span class="fc" id="L42">    this.in = in;</span>
+<span class="fc" id="L43">    this.maxPoints = maxPoints;</span>
+<span class="fc" id="L44">    this.geometryFactory = geometryFactory;</span>
+<span class="fc" id="L45">    this.columnMapping = columnMapping;</span>
+<span class="fc" id="L46">  }</span>
+
+  @Override
+  protected Iterator&lt;DataPoint&gt; getRows(TracklineContext context) {
+<span class="fc" id="L50">    return new CsvReaderIterator(columnMapping, context.getCsvParser());</span>
+  }
+
+  @Override
+  protected List&lt;RowListener&gt; createRowListeners(TracklineContext context) {
+<span class="fc" id="L55">    return Collections.singletonList(</span>
+<span class="fc" id="L56">        new RowListener(msSplit, geometrySimplifier, context.getLineWriter(), batchSize, maxPoints, geometryFactory, precision));</span>
+  }
+
+  @Override
+  protected TracklineContext createProcessingContext() {
+<span class="fc" id="L61">    return new TracklineContext(precision, objectMapper, out, in, columnMapping);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

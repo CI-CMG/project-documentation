@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TracklineTools.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:geometry-tools</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.geometrytools</a> &gt; <span class="el_source">TracklineTools.java</span></div><h1>TracklineTools.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.geometrytools;
+
+import edu.colorado.cires.geometrytools.trackline.ColumnMapping;
+import edu.colorado.cires.geometrytools.trackline.Delimiter;
+import edu.colorado.cires.geometrytools.trackline.GeometryGenerator;
+import edu.colorado.cires.geometrytools.trackline.TimeFormat;
+import java.nio.file.Path;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
+@Command(
+    name = &quot;trackline&quot;,
+    description = &quot;trackline generation&quot;,
+    mixinStandardHelpOptions = true
+)
+<span class="nc" id="L16">public class TracklineTools implements Runnable {</span>
+
+  @Option(names = {&quot;-i&quot;, &quot;--input&quot;}, required = true, description = &quot;The file containing the source data&quot;)
+  private Path input;
+
+  @Option(names = {&quot;-o&quot;, &quot;--output&quot;}, required = true, description = &quot;The file to write the output&quot;)
+  private Path output;
+
+<span class="nc" id="L24">  @Option(names = {&quot;-ot&quot;, &quot;--output-type&quot;}, description = &quot;The type of output data. Allowed values: geojson, wkt. Default: wkt&quot;, defaultValue = &quot;wkt&quot;)</span>
+  private OutputType outputType = OutputType.wkt;
+
+<span class="nc" id="L27">  @Option(</span>
+      names = {&quot;-tol&quot;, &quot;--simplification-tolerance&quot;},
+      description = &quot;The DP simplification tolerance. Default: 0.001&quot;,
+      defaultValue = &quot;0.001&quot;
+  )
+  private double simplificationTolerance = 0.001;
+
+<span class="nc" id="L34">  @Option(names = &quot;--split&quot;, negatable = true, description = &quot;Enable splitting based on time gaps. Default: enabled&quot;, fallbackValue = &quot;true&quot;)</span>
+  private boolean enableSplit = true;
+
+<span class="nc" id="L37">  @Option(names = {&quot;-split-ms&quot;,</span>
+      &quot;--split-ms&quot;}, description = &quot;The minimum amount of time in milliseconds between points to create a split. Default: 900000&quot;, defaultValue = &quot;900000&quot;)
+  private long splitGeometryMs = 900000L;
+
+<span class="nc" id="L41">  @Option(names = {&quot;-p&quot;, &quot;--precision&quot;}, description = &quot;The latitude and longitude precision to use. Default: 5&quot;, defaultValue = &quot;5&quot;)</span>
+  private int precision = 5;
+
+<span class="nc" id="L44">  @Option(names = &quot;--speed&quot;, negatable = true, description = &quot;Enable maximum speed check. Default: enabled&quot;, fallbackValue = &quot;true&quot;)</span>
+  private boolean enableSpeedCheck = true;
+
+<span class="nc" id="L47">  @Option(names = {&quot;-speed-knts&quot;, &quot;--speed-knts&quot;}, description = &quot;The maximum allowed speed in knots. Default: 60&quot;, defaultValue = &quot;60&quot;)</span>
+  private double maxAllowedSpeedKnts = 60;
+
+<span class="nc" id="L50">  @Option(names = {&quot;-lat&quot;, &quot;--latitude-column&quot;}, description = &quot;The latitude column. Default: LATITUDE&quot;, defaultValue = &quot;LATITUDE&quot;)</span>
+  private String latitudeColumn = &quot;LATITUDE&quot;;
+
+<span class="nc" id="L53">  @Option(names = {&quot;-lon&quot;, &quot;--longitude-column&quot;}, description = &quot;The longitude column. Default: LONGITUDE&quot;, defaultValue = &quot;LONGITUDE&quot;)</span>
+  private String longitudeColumn = &quot;LONGITUDE&quot;;
+
+<span class="nc" id="L56">  @Option(names = {&quot;-time&quot;, &quot;--time-column&quot;}, description = &quot;The time column. Default: TIME&quot;, defaultValue = &quot;TIME&quot;)</span>
+  private String timeColumn = &quot;TIME&quot;;
+
+<span class="nc" id="L59">  @Option(names = {&quot;-time-format&quot;, &quot;--time-format&quot;}, description = &quot;The time format. Allowed: iso_utc, epoch_millis, epoch_seconds&quot;, defaultValue = &quot;iso_utc&quot;)</span>
+  private TimeFormat timeFormat = TimeFormat.iso_utc;
+
+<span class="nc" id="L62">  @Option(names = {&quot;-del&quot;, &quot;--delimiter&quot;}, description = &quot;The file delimiter. Default 'comma'. Allowed values: comma, tab&quot;, defaultValue = &quot;comma&quot;)</span>
+  private Delimiter delimiter = Delimiter.comma;
+
+
+  @Override
+  public void run() {
+
+<span class="nc bnc" id="L69" title="All 4 branches missed.">    new GeometryGenerator(</span>
+        simplificationTolerance,
+        enableSplit ? splitGeometryMs : -1,
+        precision,
+        enableSpeedCheck ? maxAllowedSpeedKnts : -1,
+        new ColumnMapping(longitudeColumn, latitudeColumn, timeColumn, timeFormat, delimiter))
+<span class="nc" id="L75">        .generateGeometryFile(input, output, outputType);</span>
+<span class="nc" id="L76">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

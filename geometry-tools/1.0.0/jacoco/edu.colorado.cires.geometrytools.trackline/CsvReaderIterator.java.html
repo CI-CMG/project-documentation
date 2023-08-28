@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CsvReaderIterator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:geometry-tools</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.geometrytools.trackline</a> &gt; <span class="el_source">CsvReaderIterator.java</span></div><h1>CsvReaderIterator.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.geometrytools.trackline;
+
+import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+
+
+public class CsvReaderIterator implements Iterator&lt;DataPoint&gt; {
+
+  private static final int ORDERED_BUFFER_SIZE = 2000;
+  private static final int LOW_WATER_MARK = ORDERED_BUFFER_SIZE / 2;
+
+  private final ColumnMapping columnMapping;
+
+  private final Iterator&lt;CSVRecord&gt; iterator;
+  private final Map&lt;String,Integer&gt; headerMap;
+  private DataPoint lastRow;
+
+<span class="fc" id="L27">  private final Deque&lt;DataPoint&gt; orderedBuffer = new ArrayDeque&lt;&gt;(ORDERED_BUFFER_SIZE);</span>
+<span class="fc" id="L28">  private boolean doneReading = false;</span>
+
+<span class="fc" id="L30">  public CsvReaderIterator(ColumnMapping columnMapping, CSVParser csvParser) {</span>
+<span class="fc" id="L31">    this.columnMapping = columnMapping;</span>
+<span class="fc" id="L32">    iterator = csvParser.iterator();</span>
+<span class="fc" id="L33">    CSVRecord headerRow = iterator.next();</span>
+<span class="fc" id="L34">    headerMap = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">    for (int i = 0; i &lt; headerRow.size(); i++) {</span>
+<span class="fc" id="L36">      headerMap.put(headerRow.get(i).trim(), i);</span>
+    }
+<span class="fc" id="L38">  }</span>
+
+  private void readBuffer() {
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">    if (!doneReading) {</span>
+<span class="fc" id="L42">      int size = ORDERED_BUFFER_SIZE - orderedBuffer.size();</span>
+<span class="fc" id="L43">      List&lt;DataPoint&gt; buffer = new ArrayList&lt;&gt;(size);</span>
+<span class="fc" id="L44">      int i = 0;</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">      while (i &lt; size) {</span>
+<span class="fc" id="L46">        CSVRecord row = readNextLine();</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (row == null) {</span>
+<span class="fc" id="L48">          doneReading = true;</span>
+<span class="fc" id="L49">          break;</span>
+        }
+<span class="fc" id="L51">        buffer.add(parseRow(row));</span>
+<span class="fc" id="L52">        i++;</span>
+<span class="fc" id="L53">      }</span>
+<span class="fc" id="L54">      orderedBuffer.addAll(buffer);</span>
+<span class="fc" id="L55">      Collections.sort(buffer);</span>
+    }
+<span class="fc" id="L57">  }</span>
+
+  private Instant parseTime(CSVRecord record) {
+<span class="pc bpc" id="L60" title="1 of 4 branches missed.">    switch (columnMapping.getTimeFormat()) {</span>
+      case iso_utc:
+<span class="fc" id="L62">        return Instant.parse(record.get(headerMap.get(columnMapping.getTimeColumn())));</span>
+      case epoch_millis:
+<span class="fc" id="L64">        return Instant.ofEpochMilli(Long.parseLong(record.get(headerMap.get(columnMapping.getTimeColumn()))));</span>
+      case epoch_seconds:
+<span class="fc" id="L66">        return Instant.ofEpochSecond(Long.parseLong(record.get(headerMap.get(columnMapping.getTimeColumn()))));</span>
+      default:
+<span class="nc" id="L68">        throw new IllegalStateException(&quot;Unsupported time format &quot; + columnMapping.getTimeFormat());</span>
+    }
+  }
+
+  private DataPoint parseRow(CSVRecord record) {
+<span class="fc" id="L73">    return new DataPoint(</span>
+<span class="fc" id="L74">        Double.parseDouble(record.get(headerMap.get(columnMapping.getLongitudeColumn()))),</span>
+<span class="fc" id="L75">        Double.parseDouble(record.get(headerMap.get(columnMapping.getLatitudeColumn()))),</span>
+<span class="fc" id="L76">        parseTime(record)</span>
+    );
+  }
+
+  private CSVRecord readNextLine() {
+<span class="fc bfc" id="L81" title="All 2 branches covered.">    if (iterator.hasNext()) {</span>
+<span class="fc" id="L82">      return iterator.next();</span>
+    }
+<span class="fc" id="L84">    return null;</span>
+  }
+
+  @Override
+  public boolean hasNext() {
+<span class="fc bfc" id="L89" title="All 4 branches covered.">    if (!doneReading &amp;&amp; orderedBuffer.size() &lt; LOW_WATER_MARK) {</span>
+<span class="fc" id="L90">      readBuffer();</span>
+    }
+<span class="fc bfc" id="L92" title="All 2 branches covered.">    return !orderedBuffer.isEmpty();</span>
+  }
+
+  @Override
+  public DataPoint next() {
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">    if (hasNext()) {</span>
+<span class="fc" id="L98">      DataPoint row = orderedBuffer.pop();</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">      if (lastRow != null) {</span>
+<span class="fc" id="L100">        Instant lastTime = lastRow.getTimestamp();</span>
+<span class="fc" id="L101">        Instant thisTime = row.getTimestamp();</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">        if (thisTime.isBefore(lastTime)) {</span>
+<span class="nc" id="L103">          throw new IllegalStateException(&quot;Timestamps are out of order: &quot; + lastTime + &quot; : &quot; + thisTime);</span>
+        }
+      }
+<span class="fc" id="L106">      lastRow = row;</span>
+<span class="fc" id="L107">      return row;</span>
+    }
+<span class="nc" id="L109">    throw new IllegalStateException(&quot;End of file&quot;);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

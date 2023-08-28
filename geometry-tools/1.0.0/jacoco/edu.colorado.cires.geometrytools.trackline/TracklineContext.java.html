@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TracklineContext.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:geometry-tools</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.geometrytools.trackline</a> &gt; <span class="el_source">TracklineContext.java</span></div><h1>TracklineContext.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.geometrytools.trackline;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.colorado.cires.cmg.tracklinegen.GeoJsonMultiLineWriter;
+import java.io.BufferedReader;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class TracklineContext implements Closeable {
+
+<span class="fc" id="L22">  private static final Logger LOGGER = LoggerFactory.getLogger(TracklineContext.class);</span>
+
+  private final JsonGenerator jsonGenerator;
+  private final GeoJsonMultiLineWriter lineWriter;
+  private final CSVParser csvParser;
+
+  public TracklineContext(
+      int precision,
+      ObjectMapper objectMapper,
+      OutputStream out,
+      InputStream inputStream,
+<span class="fc" id="L33">      ColumnMapping columnMapping) {</span>
+    try {
+<span class="fc" id="L35">      jsonGenerator = objectMapper.getFactory().createGenerator(out);</span>
+<span class="nc" id="L36">    } catch (IOException e) {</span>
+<span class="nc" id="L37">      throw new RuntimeException(&quot;Unable to create JSON generator&quot;, e);</span>
+<span class="fc" id="L38">    }</span>
+<span class="fc" id="L39">    lineWriter = new GeoJsonMultiLineWriter(jsonGenerator, precision);</span>
+    try {
+<span class="fc" id="L41">      csvParser = new CSVParser(</span>
+          new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)),
+<span class="fc" id="L43">          getFormat(columnMapping));</span>
+<span class="nc" id="L44">    } catch (IOException e) {</span>
+<span class="nc" id="L45">      throw new RuntimeException(&quot;Unable to open reader&quot;, e);</span>
+<span class="fc" id="L46">    }</span>
+<span class="fc" id="L47">  }</span>
+
+  private static CSVFormat getFormat(ColumnMapping columnMapping) {
+<span class="pc bpc" id="L50" title="1 of 3 branches missed.">    switch (columnMapping.getDelimiter()) {</span>
+      case comma:
+<span class="fc" id="L52">        return CSVFormat.DEFAULT;</span>
+      case tab:
+<span class="fc" id="L54">        return CSVFormat.TDF;</span>
+      default:
+<span class="nc" id="L56">        throw new IllegalStateException(&quot;Unsupported delimiter: &quot; + columnMapping.getDelimiter());</span>
+    }
+  }
+
+  public GeoJsonMultiLineWriter getLineWriter() {
+<span class="fc" id="L61">    return lineWriter;</span>
+  }
+
+  public CSVParser getCsvParser() {
+<span class="fc" id="L65">    return csvParser;</span>
+  }
+
+  @Override
+  public void close() throws IOException {
+<span class="fc" id="L70">    List&lt;Exception&gt; listExceptions = new ArrayList&lt;&gt;();</span>
+    try {
+<span class="fc" id="L72">      csvParser.close();</span>
+<span class="nc" id="L73">    } catch (Exception e) {</span>
+<span class="nc" id="L74">      LOGGER.warn(&quot;Unable to close reader&quot;, e);</span>
+<span class="nc" id="L75">      listExceptions.add(e);</span>
+<span class="fc" id="L76">    }</span>
+    try {
+<span class="fc" id="L78">      jsonGenerator.close();</span>
+<span class="nc" id="L79">    } catch (Exception e) {</span>
+<span class="nc" id="L80">      LOGGER.warn(&quot;Unable to close JSON generator&quot;, e);</span>
+<span class="nc" id="L81">      listExceptions.add(e);</span>
+<span class="fc" id="L82">    }</span>
+
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">    if(!listExceptions.isEmpty()) {</span>
+<span class="nc" id="L85">      throw new IllegalStateException(&quot;Trackline context problem&quot;, listExceptions.get(0));</span>
+    }
+<span class="fc" id="L87">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

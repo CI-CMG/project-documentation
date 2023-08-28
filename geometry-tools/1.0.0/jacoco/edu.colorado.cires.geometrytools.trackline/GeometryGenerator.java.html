@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GeometryGenerator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:geometry-tools</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.geometrytools.trackline</a> &gt; <span class="el_source">GeometryGenerator.java</span></div><h1>GeometryGenerator.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.geometrytools.trackline;
+
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import edu.colorado.cires.cmg.iostream.Pipe;
+import edu.colorado.cires.cmg.tracklinegen.GeoJsonMultiLineProcessor;
+import edu.colorado.cires.cmg.tracklinegen.GeometrySimplifier;
+import edu.colorado.cires.cmg.tracklinegen.ValidationException;
+import edu.colorado.cires.geometrytools.OutputType;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.function.Consumer;
+import org.apache.commons.io.output.NullOutputStream;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
+
+public class GeometryGenerator {
+
+  private static final int BATCH_SIZE = 5000;
+  private static final long MAX_POINTS = -1;
+<span class="fc" id="L31">  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()</span>
+<span class="fc" id="L32">      .setSerializationInclusion(Include.NON_EMPTY)</span>
+<span class="fc" id="L33">      .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)</span>
+<span class="fc" id="L34">      .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)</span>
+<span class="fc" id="L35">      .disable(MapperFeature.DEFAULT_VIEW_INCLUSION)</span>
+<span class="fc" id="L36">      .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)</span>
+<span class="fc" id="L37">      .registerModule(new JavaTimeModule())</span>
+<span class="fc" id="L38">      .registerModule(DoubleSerializer.DOUBLE_SERIALIZER_MODULE);</span>
+<span class="fc" id="L39">  private final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory(new PrecisionModel(), 4326);</span>
+
+  //  [Decimal / Places / Degrees	/ Object that can be recognized at scale / N/S or E/W at equator, E/W at 23N/S, E/W at 45N/S, E/W at 67N/S]
+  //  0   1.0	        1° 00′ 0″	        country or large region                             111.32 km	  102.47 km	  78.71 km	43.496 km
+  //  1	  0.1	        0° 06′ 0″         large city or district                              11.132 km	  10.247 km	  7.871 km	4.3496 km
+  //  2	  0.01	      0° 00′ 36″        town or village                                     1.1132 km	  1.0247 km	  787.1 m	  434.96 m
+  //  3	  0.001	      0° 00′ 3.6″       neighborhood, street                                111.32 m	  102.47 m	  78.71 m	  43.496 m
+  //  4	  0.0001	    0° 00′ 0.36″      individual street, land parcel                      11.132 m	  10.247 m	  7.871 m	  4.3496 m
+  //  5	  0.00001	    0° 00′ 0.036″     individual trees, door entrance	                    1.1132 m	  1.0247 m	  787.1 mm	434.96 mm
+  //  6	  0.000001	  0° 00′ 0.0036″    individual humans                                   111.32 mm	  102.47 mm	  78.71 mm	43.496 mm
+  //  7	  0.0000001	  0° 00′ 0.00036″   practical limit of commercial surveying	            11.132 mm	  10.247 mm	  7.871 mm	4.3496 mm
+
+
+  private final double simplificationTolerance;
+  private final long splitGeometryMs;
+  private final int precision;
+  private final double maxAllowedSpeedKnts;
+  private final ColumnMapping columnMapping;
+
+  public GeometryGenerator(
+      double simplificationTolerance,
+      long splitGeometryMs,
+      int precision,
+      double maxAllowedSpeedKnts,
+<span class="fc" id="L63">      ColumnMapping columnMapping) {</span>
+<span class="fc" id="L64">    this.simplificationTolerance = simplificationTolerance;</span>
+<span class="fc" id="L65">    this.splitGeometryMs = splitGeometryMs;</span>
+<span class="fc" id="L66">    this.precision = precision;</span>
+<span class="fc" id="L67">    this.maxAllowedSpeedKnts = maxAllowedSpeedKnts;</span>
+<span class="fc" id="L68">    this.columnMapping = columnMapping;</span>
+<span class="fc" id="L69">  }</span>
+
+  private Consumer&lt;OutputStream&gt; phase1(InputStream csvInputStream) {
+<span class="fc" id="L72">    return outputStream -&gt; {</span>
+<span class="fc" id="L73">      Phase1Processor phase1 = new Phase1Processor(</span>
+          splitGeometryMs,
+          new GeometrySimplifier(simplificationTolerance),
+          BATCH_SIZE,
+          precision,
+          OBJECT_MAPPER,
+          outputStream,
+          csvInputStream,
+          MAX_POINTS,
+          GEOMETRY_FACTORY,
+          columnMapping);
+      try {
+<span class="fc" id="L85">        phase1.process();</span>
+<span class="nc" id="L86">      } catch (IOException e) {</span>
+<span class="nc" id="L87">        throw new RuntimeException(&quot;An error occurred simplifying geometry&quot;, e);</span>
+<span class="fc" id="L88">      }</span>
+<span class="fc" id="L89">    };</span>
+  }
+
+  private Consumer&lt;InputStream&gt; phase2(OutputStream geoJsonOutputStream, OutputStream wktOutputStream) {
+
+<span class="fc" id="L94">    return inputStream -&gt; {</span>
+<span class="fc" id="L95">      GeoJsonMultiLineProcessor phase2 = new GeoJsonMultiLineProcessor(OBJECT_MAPPER, precision, maxAllowedSpeedKnts);</span>
+      try {
+<span class="fc" id="L97">        phase2.process(inputStream, geoJsonOutputStream, wktOutputStream);</span>
+<span class="nc" id="L98">      } catch (ValidationException e) {</span>
+<span class="nc" id="L99">        throw new RuntimeException(&quot;An error occurred simplifying geometry&quot;, e);</span>
+<span class="fc" id="L100">      }</span>
+<span class="fc" id="L101">    };</span>
+  }
+
+  private void process(InputStream csvInputStream, OutputStream geoJsonOutputStream, OutputStream wktOutputStream) {
+<span class="fc" id="L105">    Pipe.pipe(phase1(csvInputStream), phase2(geoJsonOutputStream, wktOutputStream));</span>
+<span class="fc" id="L106">  }</span>
+
+  private static Optional&lt;Path&gt; getParent(Path path) {
+<span class="fc" id="L109">    return Optional.ofNullable(path.getParent());</span>
+  }
+
+  public void generateGeometryFile(Path inputFile, Path outputFile, OutputType outputType) {
+<span class="fc" id="L113">    getParent(outputFile).ifPresent(parent -&gt; {</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">      if (!Files.exists(parent)) {</span>
+        try {
+<span class="fc" id="L116">          Files.createDirectories(parent);</span>
+<span class="nc" id="L117">        } catch (IOException e) {</span>
+<span class="nc" id="L118">          throw new RuntimeException(&quot;Unable to create directory &quot; + outputFile.getParent(), e);</span>
+<span class="fc" id="L119">        }</span>
+      }
+<span class="fc" id="L121">    });</span>
+<span class="fc" id="L122">    try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(inputFile));</span>
+<span class="fc" id="L123">        OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(outputFile))</span>
+    ) {
+<span class="pc bpc" id="L125" title="1 of 3 branches missed.">      switch (outputType) {</span>
+        case wkt:
+<span class="fc" id="L127">          process(inputStream, NullOutputStream.INSTANCE, outputStream);</span>
+<span class="fc" id="L128">          break;</span>
+        case geojson:
+<span class="fc" id="L130">          process(inputStream, outputStream, NullOutputStream.INSTANCE);</span>
+<span class="fc" id="L131">          break;</span>
+        default:
+<span class="nc" id="L133">          throw new IllegalStateException(&quot;Unsupported output type &quot; + outputType);</span>
+      }
+<span class="nc" id="L135">    } catch (IOException e) {</span>
+<span class="nc" id="L136">      throw new RuntimeException(&quot;Unable to process file&quot;, e);</span>
+<span class="fc" id="L137">    }</span>
+<span class="fc" id="L138">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
