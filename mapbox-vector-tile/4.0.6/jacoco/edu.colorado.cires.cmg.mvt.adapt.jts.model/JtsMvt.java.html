@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JtsMvt.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:mapbox-vector-tile</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.mvt.adapt.jts.model</a> &gt; <span class="el_source">JtsMvt.java</span></div><h1>JtsMvt.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.mvt.adapt.jts.model;
+
+import java.util.*;
+
+/**
+ * JTS model of a Mapbox Vector Tile.
+ */
+public class JtsMvt {
+
+    /**
+     * Map layers by name.
+     */
+    private final Map&lt;String, JtsLayer&gt; layersByName;
+
+    /**
+     * Create an empty MVT.
+     */
+    public JtsMvt() {
+<span class="nc" id="L19">        this(Collections.emptyList());</span>
+<span class="nc" id="L20">    }</span>
+
+    /**
+     * Create MVT with single layer.
+     *
+     * @param layer single MVT layer
+     */
+    public JtsMvt(JtsLayer layer) {
+<span class="fc" id="L28">        this(Collections.singletonList(layer));</span>
+<span class="fc" id="L29">    }</span>
+
+    /**
+     * Create MVT with the provided layers.
+     *
+     * @param layers multiple MVT layers
+     */
+    public JtsMvt(JtsLayer... layers) {
+<span class="fc" id="L37">        this(new ArrayList&lt;&gt;(Arrays.asList(layers)));</span>
+<span class="fc" id="L38">    }</span>
+
+    /**
+     * Create a MVT with the provided layers.
+     *
+     * @param layers multiple MVT layers
+     */
+<span class="fc" id="L45">    public JtsMvt(Collection&lt;JtsLayer&gt; layers) {</span>
+
+        // Linked hash map to preserve ordering
+<span class="fc" id="L48">        layersByName = new LinkedHashMap&lt;&gt;(layers.size());</span>
+
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        for(JtsLayer nextLayer : layers) {</span>
+<span class="fc" id="L51">            layersByName.put(nextLayer.getName(), nextLayer);</span>
+<span class="fc" id="L52">        }</span>
+<span class="fc" id="L53">    }</span>
+
+    /**
+     * Get the layer by the given name.
+     *
+     * @param name layer name
+     * @return layer with matching name, or null if none exists
+     */
+    public JtsLayer getLayer(String name) {
+<span class="fc" id="L62">        return layersByName.get(name);</span>
+    }
+
+    /**
+     * Get all layers within the vector tile mapped by name.
+     *
+     * @return mapping of layer name to layer
+     */
+    public Map&lt;String, JtsLayer&gt; getLayersByName() {
+<span class="nc" id="L71">        return layersByName;</span>
+    }
+
+    /**
+     * Get get all layers within the vector tile.
+     *
+     * @return insertion-ordered collection of layers
+     */
+    public Collection&lt;JtsLayer&gt; getLayers() {
+<span class="fc" id="L80">        return layersByName.values();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L85">        return &quot;JtsMvt{&quot; +</span>
+                &quot;layersByName=&quot; + layersByName +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (this == o) return true;</span>
+<span class="pc bpc" id="L93" title="2 of 4 branches missed.">        if (o == null || getClass() != o.getClass()) return false;</span>
+
+<span class="fc" id="L95">        JtsMvt jtsMvt = (JtsMvt) o;</span>
+
+<span class="fc" id="L97">        return layersByName.equals(jtsMvt.layersByName);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L102">        return layersByName.hashCode();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MvtLayerParams.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:mapbox-vector-tile</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.mvt.build</a> &gt; <span class="el_source">MvtLayerParams.java</span></div><h1>MvtLayerParams.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.mvt.build;
+
+
+/**
+ * Immutable parameters collection for Mapbox-Vector-Tile creation.
+ */
+public final class MvtLayerParams {
+
+    /**
+     * Default layer parameters created using {@link #MvtLayerParams()}.
+     */
+<span class="fc" id="L12">    public static final MvtLayerParams DEFAULT = new MvtLayerParams();</span>
+
+
+    /**
+     * the resolution of the tile in 'pixel' dimensions.
+     */
+    public final int tileSize;
+
+    /**
+     * the resolution of the MVT local coordinate system.
+     */
+    public final int extent;
+
+    /**
+     * ratio of tile 'pixel' dimensions to tile extent dimensions.
+     */
+    public final float ratio;
+
+    /**
+     * Construct default layer sizing parameters for MVT creation.
+     *
+     * &lt;p&gt;Uses defaults:&lt;/p&gt;
+     * &lt;ul&gt;
+     *     &lt;li&gt;{@link #tileSize} = 256&lt;/li&gt;
+     *     &lt;li&gt;{@link #extent} = 4096&lt;/li&gt;
+     * &lt;/ul&gt;
+     *
+     * @see #MvtLayerParams(int, int)
+     */
+    public MvtLayerParams() {
+<span class="fc" id="L42">        this(256, 4096);</span>
+<span class="fc" id="L43">    }</span>
+
+    /**
+     * Construct layer sizing parameters for MVT creation.
+     *
+     * @param tileSize the resolution of the tile in pixel coordinates, must be &amp;gt; 0
+     * @param extent   the resolution of the MVT local coordinate system, must be &amp;gt; 0
+     */
+<span class="fc" id="L51">    public MvtLayerParams(int tileSize, int extent) {</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if(tileSize &lt;= 0) {</span>
+<span class="nc" id="L53">            throw new IllegalArgumentException(&quot;tileSize must be &gt; 0&quot;);</span>
+        }
+
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if(extent &lt;= 0) {</span>
+<span class="nc" id="L57">            throw new IllegalArgumentException(&quot;extent must be &gt; 0&quot;);</span>
+        }
+
+<span class="fc" id="L60">        this.tileSize = tileSize;</span>
+<span class="fc" id="L61">        this.extent = extent;</span>
+<span class="fc" id="L62">        this.ratio = extent / (float) tileSize;</span>
+<span class="fc" id="L63">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
