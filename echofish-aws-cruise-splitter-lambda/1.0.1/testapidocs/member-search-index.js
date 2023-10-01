@@ -1,0 +1,1 @@
+memberSearchIndex = [{"p":"edu.colorado.cires.cmg.echofish.aws.lambda.cruisesplit","c":"GetRealFilesTest","l":"GetRealFilesTest()","url":"%3Cinit%3E()"},{"p":"edu.colorado.cires.cmg.echofish.aws.lambda.cruisesplit","c":"GetRealFilesTest","l":"test()"}]

@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CruiseSplitterLambdaHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg.echofish:echofish-aws-cruise-splitter-lambda</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.echofish.aws.lambda.cruisesplit</a> &gt; <span class="el_source">CruiseSplitterLambdaHandler.java</span></div><h1>CruiseSplitterLambdaHandler.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.echofish.aws.lambda.cruisesplit;
+
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.colorado.cires.cmg.echofish.data.dynamo.FileInfoRecord;
+import edu.colorado.cires.cmg.echofish.data.model.CruiseProcessingMessage;
+import edu.colorado.cires.cmg.echofish.data.model.jackson.ObjectMapperCreator;
+import edu.colorado.cires.cmg.echofish.data.s3.S3Operations;
+import edu.colorado.cires.cmg.echofish.data.sns.SnsNotifierFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.Instant;
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+public class CruiseSplitterLambdaHandler {
+
+<span class="fc" id="L23">  private static final Logger LOGGER = LoggerFactory.getLogger(CruiseSplitterLambdaHandler.class);</span>
+<span class="fc" id="L24">  private static final ObjectMapper OBJECT_MAPPER = ObjectMapperCreator.create();</span>
+
+
+  private final S3Operations s3;
+  private final SnsNotifierFactory sns;
+  private final AmazonDynamoDB client;
+  private final CruiseSplitterLambdaConfiguration configuration;
+  private final Supplier&lt;Instant&gt; nowProvider;
+
+<span class="fc" id="L33">  public CruiseSplitterLambdaHandler(S3Operations s3, SnsNotifierFactory sns, AmazonDynamoDB client, CruiseSplitterLambdaConfiguration configuration, Supplier&lt;Instant&gt; nowProvider) {</span>
+<span class="fc" id="L34">    this.s3 = s3;</span>
+<span class="fc" id="L35">    this.sns = sns;</span>
+<span class="fc" id="L36">    this.client = client;</span>
+<span class="fc" id="L37">    this.configuration = configuration;</span>
+<span class="fc" id="L38">    this.nowProvider = nowProvider;</span>
+<span class="fc" id="L39">  }</span>
+
+  public void handleRequest(CruiseProcessingMessage message) {
+
+<span class="fc" id="L43">    LOGGER.info(&quot;Started Event: {}&quot;, message);</span>
+
+<span class="pc bpc" id="L45" title="2 of 4 branches missed.">    if (message.getCruiseName() == null || message.getCruiseName().isEmpty()) {</span>
+<span class="nc" id="L46">      throw new IllegalArgumentException(&quot;cruiseName is required&quot;);</span>
+    }
+
+<span class="pc bpc" id="L49" title="2 of 4 branches missed.">    if (message.getShipName() == null || message.getShipName().isEmpty()) {</span>
+<span class="nc" id="L50">      throw new IllegalArgumentException(&quot;shipName is required&quot;);</span>
+    }
+
+<span class="pc bpc" id="L53" title="2 of 4 branches missed.">    if (message.getSensorName() == null || message.getSensorName().isEmpty()) {</span>
+<span class="nc" id="L54">      throw new IllegalArgumentException(&quot;sensorName is required&quot;);</span>
+    }
+
+<span class="fc" id="L57">    ArrayList&lt;CruiseProcessingMessage&gt; messages = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">    for (String fileName : getRawFiles(message)) {</span>
+<span class="fc" id="L59">      message = copyMessage(message);</span>
+<span class="fc" id="L60">      message.setFileName(fileName);</span>
+<span class="fc" id="L61">      String fileStatus = getFileStatus(message).orElse(&quot;NONE&quot;);</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">      if (!fileStatus.equals(FileInfoRecord.PipelineStatus.SUCCESS_CRUISE_SPLITTER)) {</span>
+<span class="fc" id="L63">        setProcessingFileStatus(message);</span>
+<span class="fc" id="L64">        messages.add(message);</span>
+      }
+<span class="fc" id="L66">    }</span>
+<span class="fc" id="L67">    messages.forEach(this::notifyTopic);</span>
+
+<span class="fc" id="L69">    LOGGER.info(&quot;Finished Event: {}&quot;, message);</span>
+<span class="fc" id="L70">  }</span>
+
+  private static CruiseProcessingMessage copyMessage(CruiseProcessingMessage source) {
+    try {
+<span class="fc" id="L74">      return OBJECT_MAPPER.readValue(OBJECT_MAPPER.writeValueAsString(source), CruiseProcessingMessage.class);</span>
+<span class="nc" id="L75">    } catch (JsonProcessingException e) {</span>
+<span class="nc" id="L76">      throw new RuntimeException(&quot;Unable to serialize message&quot;, e);</span>
+    }
+  }
+
+  private static String getTime(String fileName) {
+<span class="fc" id="L81">    return fileName.split(&quot;-&quot;, 2)[1].split(&quot;\\.&quot;, 2)[0];</span>
+  }
+
+  private List&lt;String&gt; getRawFiles(CruiseProcessingMessage message) {
+<span class="fc" id="L85">    String prefix = String.format(&quot;data/raw/%s/%s/%s/&quot;, message.getShipName(), message.getCruiseName(), message.getSensorName());</span>
+    // Note any files with predicate 'NOISE' are to be ignored, see: &quot;Bell_M._Shimada/SH1507&quot;
+<span class="fc" id="L87">    ArrayList&lt;String&gt; rawNoiseRemoved = new ArrayList&lt;&gt;(s3.listObjects(configuration.getInputBucket(), prefix).stream()</span>
+<span class="fc bfc" id="L88" title="All 4 branches covered.">            .filter(key -&gt; key.endsWith(&quot;.raw&quot;) &amp;&amp; !key.contains(&quot;NOISE&quot;))</span>
+<span class="fc" id="L89">            .map(key -&gt; key.split(&quot;/&quot;)[5])</span>
+<span class="fc" id="L90">            .sorted()</span>
+<span class="fc" id="L91">            .collect(Collectors.toList())</span>
+    );
+
+//    List&lt;String&gt; rawFilesFiltered = new ArrayList&lt;&gt;(Arrays.asList(&quot;A000&quot;, &quot;A123&quot;, &quot;A124&quot;, &quot;A455&quot;, &quot;A456&quot;, &quot;A789&quot;));
+//    if (message.getShipName() == &quot;Miller_Freeman&quot;) {
+//        list.removeIf(s -&gt; s.compareToIgnoreCase(&quot;A123&quot;) &lt; 0);
+//        list.removeIf(s -&gt; s.compareToIgnoreCase(&quot;A456&quot;) &gt; 0);
+//    }
+    // MF0710, Miller_Freeman, HAKE2007-D20070708-T010210.raw to HAKE2007-D20070708-T200449.raw
+<span class="pc bpc" id="L100" title="1 of 4 branches missed.">    if (message.getShipName().equals(&quot;Miller_Freeman&quot;) &amp;&amp; message.getCruiseName().equals(&quot;MF0710&quot;)) {</span>
+<span class="fc" id="L101">        LOGGER.info(&quot;Filtering to subset for Miller Freeman MF0710&quot;);</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        rawNoiseRemoved.removeIf(s -&gt; getTime(s).compareTo(&quot;D20070708-T010210&quot;) &lt; 0);</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        rawNoiseRemoved.removeIf(s -&gt; getTime(s).compareTo(&quot;D20070708-T200449&quot;) &gt; 0);</span>
+    }
+    // MF0903, Miller_Freeman, MF2009-D20090724-T015244.raw to MF2009-D20090724-T183253.raw
+<span class="pc bpc" id="L106" title="1 of 4 branches missed.">    if (message.getShipName().equals(&quot;Miller_Freeman&quot;) &amp;&amp; message.getCruiseName().equals(&quot;MF0903&quot;)) {</span>
+<span class="nc" id="L107">      LOGGER.info(&quot;Filtering to subset for Miller Freeman MF0903&quot;);</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">      rawNoiseRemoved.removeIf(s -&gt; getTime(s).compareTo(&quot;D20090724-T015244&quot;) &lt; 0);</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">      rawNoiseRemoved.removeIf(s -&gt; getTime(s).compareTo(&quot;D20090724-T183253&quot;) &gt; 0);</span>
+    }
+    // SH1103, Bell_M._Shimada, HAKE2011-D20110721-T203942.raw to HAKE2011-D20110722-T005319.raw
+<span class="pc bpc" id="L112" title="1 of 4 branches missed.">    if (message.getShipName().equals(&quot;Bell_M._Shimada&quot;) &amp;&amp; message.getCruiseName().equals(&quot;SH1103&quot;)) {</span>
+<span class="nc" id="L113">      LOGGER.info(&quot;Filtering to subset for Bell M Shimada SH1103&quot;);</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">      rawNoiseRemoved.removeIf(s -&gt; getTime(s).compareTo(&quot;D20110721-T203942&quot;) &lt; 0);</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">      rawNoiseRemoved.removeIf(s -&gt; getTime(s).compareTo(&quot;D20110722-T005319&quot;) &gt; 0);</span>
+    }
+    // SH1204, Bell_M._Shimada, SaKe_2012-D20120724-T192810.raw to SaKe_2012-D20120725-T004607.raw
+<span class="pc bpc" id="L118" title="1 of 4 branches missed.">    if (message.getShipName().equals(&quot;Bell_M._Shimada&quot;) &amp;&amp; message.getCruiseName().equals(&quot;SH1204&quot;)) {</span>
+<span class="nc" id="L119">      LOGGER.info(&quot;Filtering to subset for Bell M Shimada SH1204&quot;);</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">      rawNoiseRemoved.removeIf(s -&gt; getTime(s).compareTo(&quot;D20120724-T192810&quot;) &lt; 0);</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">      rawNoiseRemoved.removeIf(s -&gt; getTime(s).compareTo(&quot;D20120725-T004607&quot;) &gt; 0);</span>
+    }
+    // SH1305, Bell_M._Shimada, SaKe_2013-D20130729-T161646.raw to SaKe_2013-D20130730-T015635.raw
+<span class="pc bpc" id="L124" title="1 of 4 branches missed.">    if (message.getShipName().equals(&quot;Bell_M._Shimada&quot;) &amp;&amp; message.getCruiseName().equals(&quot;SH1305&quot;)) {</span>
+<span class="fc" id="L125">      LOGGER.info(&quot;Filtering to subset for Bell M Shimada SH1305&quot;);</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">      rawNoiseRemoved.removeIf(s -&gt; getTime(s).compareTo(&quot;D20130729-T161646&quot;) &lt; 0);</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">      rawNoiseRemoved.removeIf(s -&gt; getTime(s).compareTo(&quot;D20130730-T015635&quot;) &gt; 0);</span>
+    }
+    // SH1507, Bell_M._Shimada, SaKe2015-D20150719-T190837 to SaKe2015-D20150719-T195842
+<span class="pc bpc" id="L130" title="1 of 4 branches missed.">    if (message.getShipName().equals(&quot;Bell_M._Shimada&quot;) &amp;&amp; message.getCruiseName().equals(&quot;SH1507&quot;)) {</span>
+<span class="nc" id="L131">      LOGGER.info(&quot;Filtering to subset for Bell M Shimada SH1507&quot;);</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">      rawNoiseRemoved.removeIf(s -&gt; getTime(s).compareTo(&quot;D20150719-T190837&quot;) &lt; 0);</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">      rawNoiseRemoved.removeIf(s -&gt; getTime(s).compareTo(&quot;D20150719-T195842&quot;) &gt; 0);</span>
+    }
+
+<span class="fc" id="L136">    return rawNoiseRemoved;</span>
+  }
+
+  private void notifyTopic(CruiseProcessingMessage message) {
+<span class="fc" id="L140">    sns.createNotifier().notify(configuration.getTopicArn(), message);</span>
+<span class="fc" id="L141">  }</span>
+
+  private Optional&lt;String&gt; getFileStatus(CruiseProcessingMessage message) {
+<span class="fc" id="L144">    DynamoDBMapper mapper = new DynamoDBMapper(client);</span>
+<span class="fc" id="L145">    FileInfoRecord record = mapper.load(</span>
+            FileInfoRecord.class,
+<span class="fc" id="L147">            message.getFileName(),</span>
+<span class="fc" id="L148">            message.getCruiseName(),</span>
+<span class="fc" id="L149">            DynamoDBMapperConfig.TableNameOverride.withTableNameReplacement(configuration.getTableName()).config());</span>
+<span class="fc" id="L150">    return Optional.ofNullable(record).map(FileInfoRecord::getPipelineStatus);</span>
+  }
+
+  private void setProcessingFileStatus(CruiseProcessingMessage message) {
+<span class="fc" id="L154">    DynamoDBMapper mapper = new DynamoDBMapper(client);</span>
+<span class="fc" id="L155">    FileInfoRecord record = new FileInfoRecord();</span>
+<span class="fc" id="L156">    record.setFileName(message.getFileName());</span>
+<span class="fc" id="L157">    record.setCruiseName(message.getCruiseName());</span>
+<span class="fc" id="L158">    record.setShipName(message.getShipName());</span>
+<span class="fc" id="L159">    record.setSensorName(message.getSensorName());</span>
+<span class="fc" id="L160">    record.setPipelineTime(nowProvider.get().toString());</span>
+<span class="fc" id="L161">    record.setPipelineStatus(FileInfoRecord.PipelineStatus.PROCESSING_CRUISE_SPLITTER);</span>
+<span class="fc" id="L162">    mapper.save(record, DynamoDBMapperConfig.TableNameOverride.withTableNameReplacement(configuration.getTableName()).config());</span>
+<span class="fc" id="L163">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
