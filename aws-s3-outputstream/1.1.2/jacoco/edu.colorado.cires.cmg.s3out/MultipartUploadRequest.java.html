@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MultipartUploadRequest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:aws-s3-outputstream</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.s3out</a> &gt; <span class="el_source">MultipartUploadRequest.java</span></div><h1>MultipartUploadRequest.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.s3out;
+
+import java.util.Objects;
+import java.util.Optional;
+
+public class MultipartUploadRequest {
+
+  /**
+   * Creates a new builder for a MultipartUploadRequest.
+   *
+   * @return a new builder for a MultipartUploadRequest
+   */
+  public static Builder builder() {
+<span class="fc" id="L14">    return new Builder();</span>
+  }
+
+  private final String bucket;
+  private final String key;
+  private final ObjectMetadataCustomizer objectMetadata;
+
+<span class="fc" id="L21">  private MultipartUploadRequest(String bucket, String key, ObjectMetadataCustomizer objectMetadata) {</span>
+<span class="fc" id="L22">    this.bucket = bucket;</span>
+<span class="fc" id="L23">    this.key = key;</span>
+<span class="fc" id="L24">    this.objectMetadata = objectMetadata;</span>
+<span class="fc" id="L25">  }</span>
+
+  /**
+   * Returns the bucket name.
+   * Never null.
+   * @return the bucket name
+   */
+  public String getBucket() {
+<span class="fc" id="L33">    return bucket;</span>
+  }
+
+  /**
+   * Returns the bucket key
+   * Never null.
+   * @return the bucket key
+   */
+  public String getKey() {
+<span class="fc" id="L42">    return key;</span>
+  }
+
+  /**
+   * Returns and {@link Optional} containing a {@link ObjectMetadataCustomizer} if available or an empty {@link Optional} otherwise.
+   * @return an {@link Optional}lly wrapped {@link ObjectMetadataCustomizer}
+   */
+  public Optional&lt;ObjectMetadataCustomizer&gt; getObjectMetadata() {
+<span class="fc" id="L50">    return Optional.ofNullable(objectMetadata);</span>
+  }
+
+
+  /**
+   * Builds a {@link MultipartUploadRequest}.
+   */
+  public static class Builder {
+
+    private String bucket;
+    private String key;
+    private ObjectMetadataCustomizer objectMetadata;
+
+    private Builder() {
+
+    }
+
+    /**
+     * Sets the bucket name for the {@link MultipartUploadRequest}. Required.
+     *
+     * @param bucket the bucket name
+     * @return this Builder
+     */
+    public Builder bucket(String bucket) {
+<span class="fc" id="L74">      this.bucket = bucket;</span>
+<span class="fc" id="L75">      return this;</span>
+    }
+
+    /**
+     * Sets the key where the file will be uploaded to in the bucket. Required.
+     *
+     * @param key the key where the file will be uploaded to in the bucket
+     * @return this Builder
+     */
+    public Builder key(String key) {
+<span class="fc" id="L85">      this.key = key;</span>
+<span class="fc" id="L86">      return this;</span>
+    }
+
+    /**
+     * Sets the metadata that will be applied to a file.
+     *
+     * @param objectMetadata the file metadata
+     * @return this Builder
+     */
+    public Builder objectMetadata(ObjectMetadataCustomizer objectMetadata) {
+<span class="fc" id="L96">      this.objectMetadata = objectMetadata;</span>
+<span class="fc" id="L97">      return this;</span>
+    }
+
+    /**
+     * Builds a new {@link MultipartUploadRequest}
+     *
+     * @return a new {@link MultipartUploadRequest}
+     */
+    public MultipartUploadRequest build() {
+<span class="fc" id="L106">      return new MultipartUploadRequest(</span>
+<span class="fc" id="L107">          Objects.requireNonNull(bucket, &quot;bucket is required&quot;),</span>
+<span class="fc" id="L108">          Objects.requireNonNull(key, &quot;key is required&quot;),</span>
+          objectMetadata);
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

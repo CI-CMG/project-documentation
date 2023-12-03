@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FileMockS3ClientMultipartUpload.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:aws-s3-outputstream</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.s3out</a> &gt; <span class="el_source">FileMockS3ClientMultipartUpload.java</span></div><h1>FileMockS3ClientMultipartUpload.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.s3out;
+
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import software.amazon.awssdk.services.s3.model.CompletedPart;
+import software.amazon.awssdk.utils.BinaryUtils;
+
+/**
+ * A mock implementation of a {@link S3ClientMultipartUpload} that uses the local filesystem.
+ * ONLY to be used for testing.
+ */
+public class FileMockS3ClientMultipartUpload implements S3ClientMultipartUpload {
+
+  /**
+   * A Builder that builds a {@link FileMockS3ClientMultipartUpload}
+   *
+   * @return the Builder
+   */
+  public static Builder builder() {
+<span class="fc" id="L32">    return new Builder();</span>
+  }
+
+  /**
+   * A Builder that builds a {@link FileMockS3ClientMultipartUpload}
+   */
+  public static class Builder {
+    private Path mockBucketDir;
+
+    private Builder() {
+
+    }
+
+    /**
+     * Sets a directory that will contain directories representing buckets for testing.
+     *
+     * @param mockBucketDir a directory that will contain directories representing buckets for testing
+     * @return this Builder
+     */
+    public Builder mockBucketDir(Path mockBucketDir) {
+<span class="fc" id="L52">      this.mockBucketDir = mockBucketDir;</span>
+<span class="fc" id="L53">      return this;</span>
+    }
+
+    /**
+     * Builds a new {@link FileMockS3ClientMultipartUpload}
+     *
+     * @return a new {@link FileMockS3ClientMultipartUpload}
+     */
+    public FileMockS3ClientMultipartUpload build() {
+<span class="fc" id="L62">      return new FileMockS3ClientMultipartUpload(mockBucketDir);</span>
+    }
+  }
+
+<span class="fc" id="L66">  private final Map&lt;String, MultipartUploadState&gt; uploadStateMap = Collections.synchronizedMap(new HashMap&lt;&gt;());</span>
+  private final Path mockBucketDir;
+
+<span class="fc" id="L69">  private FileMockS3ClientMultipartUpload(Path mockBucketDir) {</span>
+<span class="fc" id="L70">    this.mockBucketDir = Objects.requireNonNull(mockBucketDir);</span>
+<span class="fc" id="L71">  }</span>
+
+  @Override
+  public String createMultipartUpload(String bucket, String key) {
+<span class="nc" id="L75">    return createMultipartUpload(MultipartUploadRequest.builder().bucket(bucket).key(key).build());</span>
+  }
+
+  @Override
+  public String createMultipartUpload(MultipartUploadRequest multipartUploadRequest) {
+<span class="fc" id="L80">    MultipartUploadState multipartUploadState = new MultipartUploadState(</span>
+<span class="fc" id="L81">        multipartUploadRequest.getBucket(),</span>
+<span class="fc" id="L82">        multipartUploadRequest.getKey());</span>
+<span class="fc" id="L83">    uploadStateMap.put(multipartUploadState.getId(), multipartUploadState);</span>
+<span class="fc" id="L84">    return multipartUploadState.getId();</span>
+  }
+
+  @Override
+  public CompletedPart uploadPart(String bucket, String key, String uploadId, int partNumber, ByteBuffer buffer) {
+<span class="fc" id="L89">    MultipartUploadState multipartUploadState = uploadStateMap.get(uploadId);</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">    if (!multipartUploadState.getBucket().equals(bucket)) {</span>
+<span class="nc" id="L91">      throw new IllegalStateException(&quot;Incorrect bucket: &quot; + bucket + &quot; : &quot; + multipartUploadState.getBucket());</span>
+    }
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">    if (!multipartUploadState.getKey().equals(key)) {</span>
+<span class="nc" id="L94">      throw new IllegalStateException(&quot;Incorrect key: &quot; + key + &quot; : &quot; + multipartUploadState.getKey());</span>
+    }
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">    if (partNumber != multipartUploadState.getParts().size() + 1) {</span>
+<span class="nc" id="L97">      throw new IllegalStateException(&quot;Incorrect part number: &quot; + partNumber + &quot; : &quot; + (multipartUploadState.getParts().size() + 1));</span>
+    }
+<span class="fc" id="L99">    multipartUploadState.getParts().add(buffer);</span>
+<span class="fc" id="L100">    return CompletedPart.builder().build();</span>
+  }
+
+  @Override
+  public void completeMultipartUpload(String bucket, String key, String uploadId, Collection&lt;CompletedPart&gt; completedParts) {
+<span class="fc" id="L105">    MultipartUploadState multipartUploadState = uploadStateMap.remove(uploadId);</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">    if (!multipartUploadState.getBucket().equals(bucket)) {</span>
+<span class="nc" id="L107">      throw new IllegalStateException(&quot;Incorrect bucket: &quot; + bucket + &quot; : &quot; + multipartUploadState.getBucket());</span>
+    }
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">    if (!multipartUploadState.getKey().equals(key)) {</span>
+<span class="nc" id="L110">      throw new IllegalStateException(&quot;Incorrect key: &quot; + key + &quot; : &quot; + multipartUploadState.getKey());</span>
+    }
+<span class="fc" id="L112">    Path path = mockBucketDir.resolve(bucket).resolve(key);</span>
+<span class="fc" id="L113">    Path parent = path.getParent();</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">    if (parent != null) {</span>
+      try {
+<span class="fc" id="L116">        Files.createDirectories(parent);</span>
+<span class="nc" id="L117">      } catch (IOException e) {</span>
+<span class="nc" id="L118">        throw new IllegalStateException(&quot;Unable to create directory: &quot; + parent);</span>
+<span class="fc" id="L119">      }</span>
+    }
+
+<span class="fc" id="L122">    try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(path))) {</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">      for (ByteBuffer buffer : multipartUploadState.getParts()) {</span>
+<span class="fc" id="L124">        outputStream.write(BinaryUtils.copyRemainingBytesFrom(buffer));</span>
+<span class="fc" id="L125">      }</span>
+<span class="nc" id="L126">    } catch (IOException e) {</span>
+<span class="nc" id="L127">      throw new IllegalStateException(&quot;Unable to write to file&quot;, e);</span>
+<span class="fc" id="L128">    }</span>
+<span class="fc" id="L129">  }</span>
+
+  @Override
+  public void abortMultipartUpload(String bucket, String key, String uploadId) {
+<span class="fc" id="L133">    MultipartUploadState multipartUploadState = uploadStateMap.remove(uploadId);</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">    if (!multipartUploadState.getBucket().equals(bucket)) {</span>
+<span class="nc" id="L135">      throw new IllegalStateException(&quot;Incorrect bucket: &quot; + bucket + &quot; : &quot; + multipartUploadState.getBucket());</span>
+    }
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">    if (!multipartUploadState.getKey().equals(key)) {</span>
+<span class="nc" id="L138">      throw new IllegalStateException(&quot;Incorrect key: &quot; + key + &quot; : &quot; + multipartUploadState.getKey());</span>
+    }
+<span class="fc" id="L140">  }</span>
+
+  /**
+   * Returns a {@link Map} containing a mock representation of pending multipart uploads.
+   *
+   * @return a {@link Map} containing a mock representation of pending multipart uploads
+   */
+  public Map&lt;String, MultipartUploadState&gt; getUploadStateMap() {
+<span class="fc" id="L148">    return uploadStateMap;</span>
+  }
+
+  private static class MultipartUploadState {
+
+<span class="fc" id="L153">    private final List&lt;ByteBuffer&gt; parts = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L154">    private final String id = UUID.randomUUID().toString();</span>
+    private final String bucket;
+    private final String key;
+
+<span class="fc" id="L158">    private MultipartUploadState(String bucket, String key) {</span>
+<span class="fc" id="L159">      this.bucket = bucket;</span>
+<span class="fc" id="L160">      this.key = key;</span>
+<span class="fc" id="L161">    }</span>
+
+    public List&lt;ByteBuffer&gt; getParts() {
+<span class="fc" id="L164">      return parts;</span>
+    }
+
+    public String getId() {
+<span class="fc" id="L168">      return id;</span>
+    }
+
+    public String getBucket() {
+<span class="fc" id="L172">      return bucket;</span>
+    }
+
+    public String getKey() {
+<span class="fc" id="L176">      return key;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

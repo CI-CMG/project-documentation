@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>S3OutputStream.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:aws-s3-outputstream</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.s3out</a> &gt; <span class="el_source">S3OutputStream.java</span></div><h1>S3OutputStream.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.s3out;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.services.s3.model.CompletedPart;
+
+/**
+ * An {@link OutputStream} that uses a multipart upload to upload a file to a S3 bucket.
+ */
+public class S3OutputStream extends OutputStream {
+
+<span class="fc" id="L19">  private static final Logger LOGGER = LoggerFactory.getLogger(S3OutputStream.class);</span>
+  private static final int MiB = 1024 * 1024;
+  private static final int MIN_PART_SIZE_MIB = 5;
+
+  /**
+   * Creates a new builder for a S3OutputStream.
+   *
+   * @return a new builder for a S3OutputStream
+   */
+  public static Builder builder() {
+<span class="fc" id="L29">    return new Builder();</span>
+  }
+
+  /**
+   * Builds a {@link S3OutputStream}.
+   */
+  public static class Builder {
+
+    private S3ClientMultipartUpload s3;
+    private String bucket;
+    private String key;
+    private MultipartUploadRequest uploadRequest;
+<span class="fc" id="L41">    private int partSizeMib = MIN_PART_SIZE_MIB;</span>
+<span class="fc" id="L42">    private boolean autoComplete = true;</span>
+<span class="fc" id="L43">    private int uploadQueueSize = 1;</span>
+
+<span class="fc" id="L45">    private Builder() {</span>
+
+<span class="fc" id="L47">    }</span>
+
+    /**
+     * Sets the {@link S3ClientMultipartUpload} object for the {@link S3OutputStream}. Required.
+     *
+     * @param s3 the {@link S3ClientMultipartUpload}
+     * @return this Builder
+     */
+    public Builder s3(S3ClientMultipartUpload s3) {
+<span class="fc" id="L56">      this.s3 = s3;</span>
+<span class="fc" id="L57">      return this;</span>
+    }
+
+    /**
+     * Sets the bucket name for the {@link S3OutputStream}. Required.
+     *
+     * @param bucket the bucket name
+     * @return this Builder
+     * @deprecated use {@link #uploadRequest(MultipartUploadRequest)}
+     */
+    @Deprecated
+    public Builder bucket(String bucket) {
+<span class="fc" id="L69">      this.bucket = bucket;</span>
+<span class="fc" id="L70">      return this;</span>
+    }
+
+    /**
+     * Sets the key where the file will be uploaded to in the bucket. Required.
+     *
+     * @param key the key where the file will be uploaded to in the bucket
+     * @return this Builder
+     * @deprecated use {@link #uploadRequest(MultipartUploadRequest)}
+     */
+    @Deprecated
+    public Builder key(String key) {
+<span class="fc" id="L82">      this.key = key;</span>
+<span class="fc" id="L83">      return this;</span>
+    }
+
+
+    /**
+     * Sets upload request with bucket info and object metadata
+     *
+     * @param uploadRequest object
+     * @return this Builder
+     */
+    public Builder uploadRequest(MultipartUploadRequest uploadRequest) {
+<span class="nc" id="L94">      this.uploadRequest = uploadRequest;</span>
+<span class="nc" id="L95">      return this;</span>
+    }
+
+    /**
+     * Sets the part size to use when uploading in MiB. Must be at least 5. Default value: 5
+     *
+     * @param partSizeMib the part size to use when uploading in MiB
+     * @return this Builder
+     */
+    public Builder partSizeMib(int partSizeMib) {
+<span class="fc" id="L105">      this.partSizeMib = partSizeMib;</span>
+<span class="fc" id="L106">      return this;</span>
+    }
+
+    /**
+     * When a multipart file upload is completed, AWS S3 must be notified. Autocompletion is a convenience feature that allows a S3OutputStream to
+     * work like a normal {@link OutputStream}.  The main use case for this is where your code generates a S3OutputStream that must be passed to
+     * another library as a {@link OutputStream} that you do not control that is responsible for closing it. With autocompletion enabled, the AWS
+     * completion notification will always happen when the OutputStream is closed. This is fine, unless an exception occurs and close() is called in a
+     * finally block or try-with-resources (as should always be done).  In this scenario, the upload will be completed even if there was an error,
+     * rather than aborting the upload.  To ensure compatibility with java.io.OutputStream, autocompletion is enabled by default.
+     *
+     * If you have control over the code closing the S3OutputStream it is best to disable autocompletion as follows:
+     * &lt;pre&gt;
+     *     try (
+     *         InputStream inputStream = Files.newInputStream(source);
+     *         S3OutputStream s3OutputStream = S3OutputStream.builder()
+     *             .s3(s3)
+     *             .uploadRequest(MultipartUploadRequest.builder().bucket(bucketName).key(key).build())
+     *             .autoComplete(false)
+     *             .build();
+     *     ) {
+     *       IOUtils.copy(inputStream, outputStream);
+     *       s3OutputStream.done();
+     *     }
+     * &lt;/pre&gt;
+     *
+     * Note the call to s3OutputStream.done(). This should be called after all data has been uploaded, before calling close or the end of the
+     * try-with-resources block. This signals that the upload was successful and when the S3OutputStream is closed, the completion signal will be
+     * sent. If done() is not called before close() and error was assumed to have occurred and an abort signal will be send in close() instead.
+     *
+     * @param autoComplete true to enable autocompletion
+     * @return this Builder
+     */
+    public Builder autoComplete(boolean autoComplete) {
+<span class="fc" id="L140">      this.autoComplete = autoComplete;</span>
+<span class="fc" id="L141">      return this;</span>
+    }
+
+    /**
+     * A S3OutputStream uses a queue to allow multipart uploads to S3 to happen while additional buffers are being filled concurrently. The
+     * uploadQueueSize defines the number of parts to be queued before blocking population of additional parts.  The default value is 1. Specifying a
+     * higher value may improve upload speed at the expense of more heap usage. Using a value higher than one should be tested to see if any
+     * performance gains are achieved for your situation.
+     *
+     * @param uploadQueueSize the max number of buffers in the queue before blocking
+     * @return this Builder
+     */
+    public Builder uploadQueueSize(int uploadQueueSize) {
+<span class="fc" id="L154">      this.uploadQueueSize = uploadQueueSize;</span>
+<span class="fc" id="L155">      return this;</span>
+    }
+
+    /**
+     * Builds a new {@link S3OutputStream}
+     *
+     * @return a new {@link S3OutputStream}
+     */
+    public S3OutputStream build() {
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">      if (partSizeMib &lt; MIN_PART_SIZE_MIB) {</span>
+<span class="nc" id="L165">        throw new IllegalArgumentException(&quot;Part size MiB must be at least &quot; + MIN_PART_SIZE_MIB);</span>
+      }
+      MultipartUploadRequest request;
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">      if (uploadRequest != null) {</span>
+<span class="nc" id="L169">        request = uploadRequest;</span>
+      } else {
+<span class="fc" id="L171">        request = MultipartUploadRequest.builder().bucket(bucket).key(key).build();</span>
+      }
+<span class="fc" id="L173">      return new S3OutputStream(s3, request, partSizeMib * MiB, autoComplete, uploadQueueSize);</span>
+    }
+  }
+
+  private final S3ClientMultipartUpload s3;
+  private final String bucket;
+  private final String key;
+  private final int maxBufferSize;
+  private final String uploadId;
+<span class="fc" id="L182">  private final List&lt;CompletedPart&gt; completedParts = new ArrayList&lt;&gt;();</span>
+  private final BlockingQueue&lt;UploadConsumerBuffer&gt; uploadQueue;
+  private final Thread consumer;
+
+  private ByteBuffer buffer;
+  private boolean complete;
+  private boolean closed;
+
+
+  S3OutputStream(S3ClientMultipartUpload s3, MultipartUploadRequest uploadRequest, int maxBufferSize, boolean autoComplete,
+<span class="fc" id="L192">      int queueSize) {</span>
+<span class="fc" id="L193">    this.uploadQueue = new LinkedBlockingDeque&lt;&gt;(queueSize);</span>
+<span class="fc" id="L194">    this.s3 = s3;</span>
+<span class="fc" id="L195">    this.bucket = uploadRequest.getBucket();</span>
+<span class="fc" id="L196">    this.key = uploadRequest.getKey();</span>
+<span class="fc" id="L197">    this.maxBufferSize = maxBufferSize;</span>
+<span class="fc" id="L198">    complete = autoComplete;</span>
+<span class="fc" id="L199">    uploadId = s3.createMultipartUpload(uploadRequest);</span>
+<span class="fc" id="L200">    newBuffer();</span>
+<span class="fc" id="L201">    consumer = new Thread(new UploadConsumer());</span>
+<span class="fc" id="L202">    consumer.start();</span>
+<span class="fc" id="L203">  }</span>
+
+  private void newBuffer() {
+<span class="fc" id="L206">    buffer = ByteBuffer.allocate(maxBufferSize);</span>
+<span class="fc" id="L207">  }</span>
+
+  private void uploadPart() {
+<span class="fc bfc" id="L210" title="All 2 branches covered.">    if (buffer.position() &gt; 0) {</span>
+<span class="fc" id="L211">      buffer.flip();</span>
+      try {
+<span class="fc" id="L213">        uploadQueue.put(new UploadConsumerBuffer(buffer, false));</span>
+<span class="nc" id="L214">      } catch (InterruptedException e) {</span>
+<span class="nc" id="L215">        Thread.currentThread().interrupt();</span>
+<span class="nc" id="L216">        throw new IllegalStateException(&quot;Upload thread was interrupted&quot;, e);</span>
+<span class="fc" id="L217">      }</span>
+    }
+<span class="fc" id="L219">  }</span>
+
+<span class="fc" id="L221">  private class UploadConsumer implements Runnable {</span>
+
+    @Override
+    public void run() {
+      try {
+        while (true) {
+<span class="fc" id="L227">          UploadConsumerBuffer buffer = uploadQueue.take();</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">          if (buffer.isPoison()) {</span>
+<span class="fc" id="L229">            return;</span>
+          }
+<span class="fc" id="L231">          synchronized (completedParts) {</span>
+<span class="fc" id="L232">            int partNumber = completedParts.size() + 1;</span>
+<span class="fc" id="L233">            completedParts.add(s3.uploadPart(bucket, key, uploadId, partNumber, buffer.getBuffer()));</span>
+<span class="fc" id="L234">          }</span>
+<span class="fc" id="L235">        }</span>
+<span class="nc" id="L236">      } catch (InterruptedException e) {</span>
+<span class="nc" id="L237">        Thread.currentThread().interrupt();</span>
+      }
+<span class="nc" id="L239">    }</span>
+  }
+
+  private static class UploadConsumerBuffer {
+
+    private final ByteBuffer buffer;
+    private final boolean poison;
+
+<span class="fc" id="L247">    private UploadConsumerBuffer(ByteBuffer buffer, boolean poison) {</span>
+<span class="fc" id="L248">      this.buffer = buffer;</span>
+<span class="fc" id="L249">      this.poison = poison;</span>
+<span class="fc" id="L250">    }</span>
+
+    public ByteBuffer getBuffer() {
+<span class="fc" id="L253">      return buffer;</span>
+    }
+
+    public boolean isPoison() {
+<span class="fc" id="L257">      return poison;</span>
+    }
+  }
+
+  private void cycleBuffer() {
+<span class="fc" id="L262">    uploadPart();</span>
+<span class="fc" id="L263">    newBuffer();</span>
+<span class="fc" id="L264">  }</span>
+
+  private void complete() {
+<span class="fc" id="L267">    synchronized (completedParts) {</span>
+<span class="fc" id="L268">      s3.completeMultipartUpload(bucket, key, uploadId, completedParts);</span>
+<span class="fc" id="L269">    }</span>
+<span class="fc" id="L270">  }</span>
+
+  private void abort() {
+    try {
+<span class="fc" id="L274">      s3.abortMultipartUpload(bucket, key, uploadId);</span>
+<span class="nc" id="L275">    } catch (Exception e) {</span>
+<span class="nc" id="L276">      LOGGER.warn(&quot;An error occurred aborting multipart upload: &quot; + bucket + &quot;:&quot; + key, e);</span>
+<span class="fc" id="L277">    }</span>
+<span class="fc" id="L278">  }</span>
+
+  /**
+   * If autocomplete is disabled, marks the upload as successful.
+   *
+   * @see Builder#autoComplete(boolean)
+   */
+  public void done() {
+<span class="fc" id="L286">    complete = true;</span>
+<span class="fc" id="L287">  }</span>
+
+  @Override
+  public void write(byte[] b, int off, int len) throws IOException {
+<span class="pc bpc" id="L291" title="1 of 2 branches missed.">    if (b == null) {</span>
+<span class="nc" id="L292">      throw new NullPointerException();</span>
+<span class="pc bpc" id="L293" title="5 of 10 branches missed.">    } else if ((off &lt; 0) || (off &gt; b.length) || (len &lt; 0) ||</span>
+        ((off + len) &gt; b.length) || ((off + len) &lt; 0)) {
+<span class="nc" id="L295">      throw new IndexOutOfBoundsException();</span>
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">    } else if (len == 0) {</span>
+<span class="nc" id="L297">      return;</span>
+    }
+<span class="fc bfc" id="L299" title="All 2 branches covered.">    if (buffer.remaining() &gt;= len) {</span>
+<span class="fc" id="L300">      buffer.put(b, off, len);</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">      if (!buffer.hasRemaining()) {</span>
+<span class="fc" id="L302">        cycleBuffer();</span>
+      }
+    } else {
+<span class="fc bfc" id="L305" title="All 2 branches covered.">      for (byte[] chunk : chunkBytes(b, off, len)) {</span>
+<span class="fc" id="L306">        buffer.put(chunk);</span>
+<span class="fc bfc" id="L307" title="All 2 branches covered.">        if (!buffer.hasRemaining()) {</span>
+<span class="fc" id="L308">          cycleBuffer();</span>
+        }
+<span class="fc" id="L310">      }</span>
+    }
+<span class="fc" id="L312">  }</span>
+
+  private List&lt;byte[]&gt; chunkBytes(byte[] b, int initialOffset, int len) {
+<span class="fc" id="L315">    List&lt;byte[]&gt; chunks = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L316">    final int bEnd = initialOffset + len;</span>
+<span class="fc" id="L317">    int start = initialOffset;</span>
+<span class="fc" id="L318">    int end = Math.min(bEnd, start + buffer.remaining());</span>
+<span class="fc" id="L319">    byte[] chunk = new byte[end - start];</span>
+<span class="fc" id="L320">    System.arraycopy(b, start, chunk, 0, chunk.length);</span>
+<span class="fc" id="L321">    chunks.add(chunk);</span>
+
+<span class="fc bfc" id="L323" title="All 2 branches covered.">    while (end &lt; bEnd) {</span>
+<span class="fc" id="L324">      start = end;</span>
+<span class="fc" id="L325">      end = Math.min(bEnd, start + maxBufferSize);</span>
+<span class="fc" id="L326">      chunk = new byte[end - start];</span>
+<span class="fc" id="L327">      System.arraycopy(b, start, chunk, 0, chunk.length);</span>
+<span class="fc" id="L328">      chunks.add(chunk);</span>
+    }
+
+<span class="fc" id="L331">    return chunks;</span>
+  }
+
+  @Override
+  public void write(int b) throws IOException {
+<span class="fc bfc" id="L336" title="All 2 branches covered.">    if (buffer.hasRemaining()) {</span>
+<span class="fc" id="L337">      buffer.put((byte) b);</span>
+    } else {
+<span class="fc" id="L339">      cycleBuffer();</span>
+<span class="fc" id="L340">      buffer.put((byte) b);</span>
+    }
+<span class="fc" id="L342">  }</span>
+
+  @Override
+  public void close() throws IOException {
+<span class="fc bfc" id="L346" title="All 2 branches covered.">    if (!closed) {</span>
+<span class="fc" id="L347">      closed = true;</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">      if (complete) {</span>
+<span class="fc" id="L349">        uploadPart();</span>
+        try {
+<span class="fc" id="L351">          uploadQueue.put(new UploadConsumerBuffer(null, true));</span>
+<span class="fc" id="L352">          consumer.join();</span>
+<span class="nc" id="L353">        } catch (InterruptedException e) {</span>
+<span class="nc" id="L354">          Thread.currentThread().interrupt();</span>
+<span class="fc" id="L355">        }</span>
+<span class="fc" id="L356">        complete();</span>
+      } else {
+        try {
+<span class="fc" id="L359">          uploadQueue.put(new UploadConsumerBuffer(null, true));</span>
+<span class="fc" id="L360">          consumer.join();</span>
+<span class="nc" id="L361">        } catch (InterruptedException e) {</span>
+<span class="nc" id="L362">          Thread.currentThread().interrupt();</span>
+<span class="fc" id="L363">        }</span>
+<span class="fc" id="L364">        abort();</span>
+      }
+    }
+<span class="fc" id="L367">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

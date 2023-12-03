@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AwsS3ClientMultipartUpload.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:aws-s3-outputstream</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.s3out</a> &gt; <span class="el_source">AwsS3ClientMultipartUpload.java</span></div><h1>AwsS3ClientMultipartUpload.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.s3out;
+
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.AbortMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
+import software.amazon.awssdk.services.s3.model.CompletedPart;
+import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.UploadPartRequest;
+
+/**
+ * A {@link S3ClientMultipartUpload} that uses a {@link S3Client} to make calls to the AWS S3 SDK.
+ */
+public class AwsS3ClientMultipartUpload implements S3ClientMultipartUpload {
+
+  /**
+   * Creates a new {@link Builder} to build a S3ClientMultipartUpload
+   *
+   * @return a new Builder
+   */
+  public static Builder builder() {
+<span class="fc" id="L25">    return new Builder();</span>
+  }
+
+  /**
+   * Builds a {@link AwsS3ClientMultipartUpload}
+   */
+  public static class Builder {
+    private S3Client s3;
+<span class="fc" id="L33">    private ContentTypeResolver contentTypeResolver = new DefaultContentTypeResolver();</span>
+
+<span class="fc" id="L35">    private Builder() {</span>
+
+<span class="fc" id="L37">    }</span>
+
+    /**
+     * Sets the {@link S3Client}.
+     * Required.
+     *
+     * @param s3 the {@link S3Client}
+     * @return this Builder
+     */
+    public Builder s3(S3Client s3) {
+<span class="fc" id="L47">      this.s3 = s3;</span>
+<span class="fc" id="L48">      return this;</span>
+    }
+
+    /**
+     * Sets the {@link ContentTypeResolver}
+     * Default: {@link DefaultContentTypeResolver}
+     *
+     * @param contentTypeResolver the {@link ContentTypeResolver}
+     * @return this Builder
+     */
+    public Builder contentTypeResolver(ContentTypeResolver contentTypeResolver) {
+<span class="fc" id="L59">      this.contentTypeResolver = contentTypeResolver;</span>
+<span class="fc" id="L60">      return this;</span>
+    }
+
+    /**
+     * Builds a new {@link AwsS3ClientMultipartUpload}
+     *
+     * @return a new {@link AwsS3ClientMultipartUpload}
+     */
+    public AwsS3ClientMultipartUpload build() {
+<span class="fc" id="L69">      return new AwsS3ClientMultipartUpload(s3, contentTypeResolver);</span>
+    }
+  }
+
+  private final S3Client s3;
+  private final ContentTypeResolver contentTypeResolver;
+
+<span class="fc" id="L76">  private AwsS3ClientMultipartUpload(S3Client s3, ContentTypeResolver contentTypeResolver) {</span>
+<span class="fc" id="L77">    this.s3 = s3;</span>
+<span class="fc" id="L78">    this.contentTypeResolver = contentTypeResolver;</span>
+<span class="fc" id="L79">  }</span>
+
+  @Override
+  public String createMultipartUpload(String bucket, String key) {
+<span class="nc" id="L83">    return createMultipartUpload(MultipartUploadRequest.builder().bucket(bucket).key(key).build());</span>
+  }
+
+  @Override
+  public String createMultipartUpload(MultipartUploadRequest multipartUploadRequest) {
+
+<span class="fc" id="L89">    CreateMultipartUploadRequest.Builder builder = CreateMultipartUploadRequest.builder()</span>
+<span class="fc" id="L90">            .bucket(multipartUploadRequest.getBucket())</span>
+<span class="fc" id="L91">            .key(multipartUploadRequest.getKey());</span>
+
+<span class="fc" id="L93">    contentTypeResolver.resolveContentType(multipartUploadRequest.getKey()).ifPresent(builder::contentType);</span>
+
+<span class="fc" id="L95">    multipartUploadRequest.getObjectMetadata().ifPresent(objectMetadata -&gt; objectMetadata.apply(builder));</span>
+
+<span class="fc" id="L97">    return s3.createMultipartUpload(builder.build()).uploadId();</span>
+  }
+
+  @Override
+  public CompletedPart uploadPart(String bucket, String key, String uploadId, int partNumber, ByteBuffer buffer) {
+<span class="nc" id="L102">    UploadPartRequest uploadPartRequest = UploadPartRequest.builder()</span>
+<span class="nc" id="L103">        .bucket(bucket)</span>
+<span class="nc" id="L104">        .key(key)</span>
+<span class="nc" id="L105">        .uploadId(uploadId)</span>
+<span class="nc" id="L106">        .partNumber(partNumber).build();</span>
+
+<span class="nc" id="L108">    String etag = s3.uploadPart(uploadPartRequest, RequestBody.fromRemainingByteBuffer(buffer)).eTag();</span>
+
+<span class="nc" id="L110">    return CompletedPart.builder().partNumber(partNumber).eTag(etag).build();</span>
+  }
+
+  @Override
+  public void completeMultipartUpload(String bucket, String key, String uploadId, Collection&lt;CompletedPart&gt; completedParts) {
+<span class="nc" id="L115">    CompletedMultipartUpload completedMultipartUpload = CompletedMultipartUpload.builder()</span>
+<span class="nc" id="L116">        .parts(completedParts)</span>
+<span class="nc" id="L117">        .build();</span>
+
+    CompleteMultipartUploadRequest completeMultipartUploadRequest =
+<span class="nc" id="L120">        CompleteMultipartUploadRequest.builder()</span>
+<span class="nc" id="L121">            .bucket(bucket)</span>
+<span class="nc" id="L122">            .key(key)</span>
+<span class="nc" id="L123">            .uploadId(uploadId)</span>
+<span class="nc" id="L124">            .multipartUpload(completedMultipartUpload)</span>
+<span class="nc" id="L125">            .build();</span>
+
+<span class="nc" id="L127">    s3.completeMultipartUpload(completeMultipartUploadRequest);</span>
+<span class="nc" id="L128">  }</span>
+
+  @Override
+  public void abortMultipartUpload(String bucket, String key, String uploadId) {
+<span class="nc" id="L132">    s3.abortMultipartUpload(AbortMultipartUploadRequest.builder()</span>
+<span class="nc" id="L133">        .bucket(bucket)</span>
+<span class="nc" id="L134">        .key(key)</span>
+<span class="nc" id="L135">        .uploadId(uploadId)</span>
+<span class="nc" id="L136">        .build());</span>
+<span class="nc" id="L137">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
