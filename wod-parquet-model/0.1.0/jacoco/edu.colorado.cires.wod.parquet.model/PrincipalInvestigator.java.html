@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PrincipalInvestigator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg.wod:wod-parquet-model</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.wod.parquet.model</a> &gt; <span class="el_source">PrincipalInvestigator.java</span></div><h1>PrincipalInvestigator.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.wod.parquet.model;
+
+import java.io.Serializable;
+import java.util.Objects;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
+
+/**
+ * lead scientists or engineers for a particular research cruise or project
+ *
+ *
+ * The Principal Investigator (PI) is also identified by numeric code and by variable code. The PI is the person (or persons), responsible for data collection and this information is included whenever available. A list of the numeric codes associated with each PI can be found in the file: primary_investigator_list.pdf. For the purpose of assigning PI codes, plankton data are identified as variable 14 for all plankton, -5002 for zooplankton, and -5006 for phytoplankton.
+ */
+public class PrincipalInvestigator implements Serializable {
+  private static final long serialVersionUID = 0L;
+
+  public static StructType structType() {
+<span class="nc" id="L21">    return new StructType(new StructField[]{</span>
+<span class="nc" id="L22">        new StructField(&quot;variableCode&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L23">        new StructField(&quot;piCode&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty())</span>
+    });
+  }
+
+  public Row asRow() {
+<span class="nc" id="L28">    return new GenericRowWithSchema(new Object[]{variableCode, piCode}, structType());</span>
+  }
+
+  private int variableCode;
+  private int piCode;
+
+  @Deprecated
+<span class="nc" id="L35">  public PrincipalInvestigator() {</span>
+<span class="nc" id="L36">  }</span>
+
+<span class="nc" id="L38">  private PrincipalInvestigator(int variableCode, int piCode) {</span>
+<span class="nc" id="L39">    this.variableCode = variableCode;</span>
+<span class="nc" id="L40">    this.piCode = piCode;</span>
+<span class="nc" id="L41">  }</span>
+
+
+  public int getVariableCode() {
+<span class="nc" id="L45">    return variableCode;</span>
+  }
+
+  @Deprecated
+  public void setVariableCode(int variableCode) {
+<span class="nc" id="L50">    this.variableCode = variableCode;</span>
+<span class="nc" id="L51">  }</span>
+
+  public int getPiCode() {
+<span class="nc" id="L54">    return piCode;</span>
+  }
+
+  @Deprecated
+  public void setPiCode(int piCode) {
+<span class="nc" id="L59">    this.piCode = piCode;</span>
+<span class="nc" id="L60">  }</span>
+
+  @Override
+  public boolean equals(Object o) {
+<span class="nc bnc" id="L64" title="All 2 branches missed.">    if (this == o) {</span>
+<span class="nc" id="L65">      return true;</span>
+    }
+<span class="nc bnc" id="L67" title="All 4 branches missed.">    if (o == null || getClass() != o.getClass()) {</span>
+<span class="nc" id="L68">      return false;</span>
+    }
+<span class="nc" id="L70">    PrincipalInvestigator that = (PrincipalInvestigator) o;</span>
+<span class="nc bnc" id="L71" title="All 4 branches missed.">    return variableCode == that.variableCode &amp;&amp; piCode == that.piCode;</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L76">    return Objects.hash(variableCode, piCode);</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L81">    return &quot;PrincipalInvestigator{&quot; +</span>
+        &quot;variableCode=&quot; + variableCode +
+        &quot;, piCode=&quot; + piCode +
+        '}';
+  }
+
+  public static Builder builder() {
+<span class="nc" id="L88">    return new Builder();</span>
+  }
+
+  public static Builder builder(PrincipalInvestigator source) {
+<span class="nc" id="L92">    return new Builder(source);</span>
+  }
+
+  public static Builder builder(Row row) {
+<span class="nc" id="L96">    return new Builder(row);</span>
+  }
+
+  public static class Builder {
+    private int variableCode;
+    private int piCode;
+
+    private Builder() {
+
+    }
+
+<span class="nc" id="L107">    private Builder(PrincipalInvestigator source) {</span>
+<span class="nc" id="L108">      variableCode = source.getVariableCode();</span>
+<span class="nc" id="L109">      piCode = source.getPiCode();</span>
+<span class="nc" id="L110">    }</span>
+
+<span class="nc" id="L112">    private Builder(Row row) {</span>
+<span class="nc" id="L113">      variableCode = row.getAs(&quot;variableCode&quot;);</span>
+<span class="nc" id="L114">      piCode = row.getAs(&quot;piCode&quot;);</span>
+<span class="nc" id="L115">    }</span>
+
+    public Builder withVariableCode(int variable) {
+<span class="nc" id="L118">      this.variableCode = variable;</span>
+<span class="nc" id="L119">      return this;</span>
+    }
+
+    public Builder withPiCode(int code) {
+<span class="nc" id="L123">      this.piCode = code;</span>
+<span class="nc" id="L124">      return this;</span>
+    }
+
+    public PrincipalInvestigator build() {
+<span class="nc" id="L128">      return new PrincipalInvestigator(variableCode, piCode);</span>
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

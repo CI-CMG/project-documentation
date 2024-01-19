@@ -1,0 +1,1273 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Cast.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg.wod:wod-parquet-model</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.wod.parquet.model</a> &gt; <span class="el_source">Cast.java</span></div><h1>Cast.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.wod.parquet.model;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
+
+
+/**
+ * Parquet object model representing a WOD cast: A set of profiles (or a single profile) taken concurrently.
+ * This represents the root of the WOD Parquet schema.
+ */
+public class Cast implements Serializable {
+
+  private static final long serialVersionUID = 0L;
+
+  /**
+   * Returns an Apache Spark {@link StructType} representing the root of the WOD Parquet schema.
+   *
+   * @return a {@link StructType} representing the root of the WOD Parquet schema
+   */
+  public static StructType structType() {
+<span class="nc" id="L31">    return new StructType(new StructField[]{</span>
+<span class="nc" id="L32">        new StructField(&quot;dataset&quot;, DataTypes.StringType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L33">        new StructField(&quot;castNumber&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L34">        new StructField(&quot;country&quot;, DataTypes.StringType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L35">        new StructField(&quot;cruiseNumber&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L36">        new StructField(&quot;originatorsCruise&quot;, DataTypes.StringType, true, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L37">        new StructField(&quot;timestamp&quot;, DataTypes.LongType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L38">        new StructField(&quot;year&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L39">        new StructField(&quot;month&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L40">        new StructField(&quot;day&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L41">        new StructField(&quot;time&quot;, DataTypes.DoubleType, true, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L42">        new StructField(&quot;longitude&quot;, DataTypes.DoubleType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L43">        new StructField(&quot;latitude&quot;, DataTypes.DoubleType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L44">        new StructField(&quot;profileType&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L45">        new StructField(&quot;originatorsStationCode&quot;, DataTypes.StringType, true, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L46">        new StructField(&quot;geohash&quot;, DataTypes.StringType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L47">        new StructField(&quot;variables&quot;, DataTypes.createArrayType(Variable.structType(), false), false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L48">        new StructField(&quot;principalInvestigators&quot;, DataTypes.createArrayType(PrincipalInvestigator.structType(), false), false,</span>
+<span class="nc" id="L49">            org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L50">        new StructField(&quot;attributes&quot;, DataTypes.createArrayType(Attribute.structType(), false), false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L51">        new StructField(&quot;biologicalAttributes&quot;, DataTypes.createArrayType(Attribute.structType(), false), false,</span>
+<span class="nc" id="L52">            org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L53">        new StructField(&quot;taxonomicDatasets&quot;, DataTypes.createArrayType(TaxonomicDataset.structType(), false), false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L54">        new StructField(&quot;depths&quot;, DataTypes.createArrayType(Depth.structType(), false), false, org.apache.spark.sql.types.Metadata.empty())</span>
+    });
+  }
+
+  /**
+   * This can be represented as a generic Spark {@link Row}
+   *
+   * @return this class represented as a generic Spark {@link Row}
+   */
+  public Row asRow() {
+<span class="nc" id="L64">    return new GenericRowWithSchema(new Object[]{</span>
+        dataset,
+<span class="nc" id="L66">        castNumber,</span>
+        country,
+<span class="nc" id="L68">        cruiseNumber,</span>
+        originatorsCruise,
+<span class="nc" id="L70">        timestamp,</span>
+<span class="nc" id="L71">        year,</span>
+<span class="nc" id="L72">        month,</span>
+<span class="nc" id="L73">        day,</span>
+        time,
+<span class="nc" id="L75">        longitude,</span>
+<span class="nc" id="L76">        latitude,</span>
+<span class="nc" id="L77">        profileType,</span>
+        originatorsStationCode,
+        geohash,
+        variables,
+        principalInvestigators,
+        attributes,
+        biologicalAttributes,
+        taxonomicDatasets,
+        depths,
+<span class="nc" id="L86">    }, structType());</span>
+  }
+
+
+  private String dataset;
+  private int castNumber;
+  private String country;
+  private int cruiseNumber;
+  private String originatorsCruise;
+  private long timestamp;
+  private int year;
+  private int month;
+  private int day;
+  private Double time;
+  private double longitude;
+  private double latitude;
+  private int profileType;
+  private String originatorsStationCode;
+  private String geohash;
+  private List&lt;Variable&gt; variables;
+  private List&lt;PrincipalInvestigator&gt; principalInvestigators;
+  private List&lt;Attribute&gt; attributes;
+  private List&lt;Attribute&gt; biologicalAttributes;
+  private List&lt;TaxonomicDataset&gt; taxonomicDatasets;
+  private List&lt;Depth&gt; depths;
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+<span class="nc" id="L120">  public Cast() {</span>
+<span class="nc" id="L121">  }</span>
+
+  private Cast(@Nonnull String dataset, int castNumber, @Nullable String country, int cruiseNumber, @Nullable String originatorsCruise, long timestamp, int year, int month, int day, @Nullable Double time, double longitude, double latitude,
+      int profileType, @Nullable String originatorsStationCode,  @Nonnull String geohash,  @Nonnull List&lt;Variable&gt; variables,  @Nonnull List&lt;PrincipalInvestigator&gt; principalInvestigators,
+<span class="nc" id="L125">      @Nonnull List&lt;Attribute&gt; attributes,  @Nonnull List&lt;Attribute&gt; biologicalAttributes,  @Nonnull List&lt;TaxonomicDataset&gt; taxonomicDatasets,  @Nonnull List&lt;Depth&gt; depths) {</span>
+<span class="nc" id="L126">    this.dataset = dataset;</span>
+<span class="nc" id="L127">    this.castNumber = castNumber;</span>
+<span class="nc" id="L128">    this.country = country;</span>
+<span class="nc" id="L129">    this.cruiseNumber = cruiseNumber;</span>
+<span class="nc" id="L130">    this.originatorsCruise = originatorsCruise;</span>
+<span class="nc" id="L131">    this.timestamp = timestamp;</span>
+<span class="nc" id="L132">    this.year = year;</span>
+<span class="nc" id="L133">    this.month = month;</span>
+<span class="nc" id="L134">    this.day = day;</span>
+<span class="nc" id="L135">    this.time = time;</span>
+<span class="nc" id="L136">    this.longitude = longitude;</span>
+<span class="nc" id="L137">    this.latitude = latitude;</span>
+<span class="nc" id="L138">    this.profileType = profileType;</span>
+<span class="nc" id="L139">    this.originatorsStationCode = originatorsStationCode;</span>
+<span class="nc" id="L140">    this.geohash = geohash;</span>
+<span class="nc" id="L141">    this.variables = Collections.unmodifiableList(variables);</span>
+<span class="nc" id="L142">    this.principalInvestigators = Collections.unmodifiableList(principalInvestigators);</span>
+<span class="nc" id="L143">    this.attributes = Collections.unmodifiableList(attributes);</span>
+<span class="nc" id="L144">    this.biologicalAttributes = Collections.unmodifiableList(biologicalAttributes);</span>
+<span class="nc" id="L145">    this.taxonomicDatasets = Collections.unmodifiableList(taxonomicDatasets);</span>
+<span class="nc" id="L146">    this.depths = Collections.unmodifiableList(depths);</span>
+<span class="nc" id="L147">  }</span>
+
+  /**
+   * Returns a WOD dataset: a data collection from similar instruments with similar resolution.
+   * Common Values:
+   * OSD - Ocean Station Data, Low-resolution CTD/XCTD, Plankton data
+   * CTD - High-resolution Conductivity-Temperature-Depth / XCTD data
+   * MBT - Mechanical / Digital / Micro Bathythermograph data
+   * XBT - Expendable Bathythermograph data
+   * SUR - Surface-only data
+   * APB - Autonomous Pinniped data
+   * MRB - Moored buoy data
+   * PFL - Profiling float data
+   * DRB - Drifting buoy data
+   * UOR - Undulating Oceanographic Recorder data
+   * GLD - Glider data
+   *
+   * @return usually a three-letter code representing a WOD dataset
+   */
+  @Nonnull
+  public String getDataset() {
+<span class="nc" id="L168">    return dataset;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setDataset(String dataset) {
+<span class="nc" id="L180">    this.dataset = dataset;</span>
+<span class="nc" id="L181">  }</span>
+
+  /**
+   * Each cast in the WOD18 is assigned a unique cast number.
+   *
+   * @return the unique identifier for this cast
+   */
+  public int getCastNumber() {
+<span class="nc" id="L189">    return castNumber;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setCastNumber(int castNumber) {
+<span class="nc" id="L201">    this.castNumber = castNumber;</span>
+<span class="nc" id="L202">  }</span>
+
+  /**
+   * A two-character code assigned to each country. Each code is unique to a country and is assigned by NCEI.
+   * Common Values:
+   * DE GERMANY
+   * DU EAST GERMANY
+   * AR ARGENTINA
+   * AU AUSTRALIA
+   * AT AUSTRIA
+   * BE BELGIUM
+   * BR BRAZIL
+   * BG BULGARIA
+   * CA CANADA
+   * CL CHILE
+   * TW TAIWAN
+   * CO COLOMBIA
+   * KR KOREA; REPUBLIC OF
+   * DK DENMARK
+   * EG EGYPT
+   * EC ECUADOR
+   * ES SPAIN
+   * US UNITED STATES
+   * FI FINLAND
+   * FR FRANCE
+   * GR GREECE
+   * IN INDIA
+   * ID INDONESIA
+   * IE IRELAND
+   * IS ICELAND
+   * IL ISRAEL
+   * IT ITALY
+   * JP JAPAN
+   * LB LEBANON
+   * LR LIBERIA
+   * MG MADAGASCAR
+   * MA MOROCCO
+   * MX MEXICO
+   * NO NORWAY
+   * NC NEW CALEDONIA
+   * NZ NEW ZEALAND
+   * PK PAKISTAN
+   * NL NETHERLANDS
+   * PE PERU
+   * PH PHILIPPINES
+   * PL POLAND
+   * PT PORTUGAL
+   * RO ROMANIA
+   * GB GREAT BRITAIN
+   * CN CHINA
+   * SE SWEDEN
+   * TH THAILAND
+   * TN TUNISIA
+   * TR TURKEY
+   * SU SOVIET UNION
+   * ZA SOUTH AFRICA
+   * UY URUGUAY
+   * VE VENEZUELA
+   * YU YUGOSLAVIA
+   * 99 UNKNOWN
+   * AG ANTIGUA
+   * DZ ALGERIA
+   * AO ANGOLA
+   * BB BARBADOS
+   * BS BAHAMAS
+   * CR COSTA RICA
+   * CU CUBA
+   * CY CYPRUS
+   * EE ESTONIA
+   * FJ FIJI
+   * GH GHANA
+   * HN HONDURAS
+   * HK HONG KONG
+   * CI COTE D'IVOIRE
+   * KW KUWAIT
+   * LV LATVIA
+   * LT LITHUANIA
+   * MU MAURITIUS
+   * MT MALTA
+   * MC MONACO
+   * MY MALAYSIA
+   * MR MAURITANIA
+   * NG NIGERIA
+   * PA PANAMA
+   * CD CONGO; THE DEMOCRATIC REPUBLIC OF THE
+   * RU RUSSIAN FEDERATION
+   * SA SAUDI ARABIA
+   * SC SEYCHELLES
+   * SN SENEGAL
+   * SG SINGAPORE
+   * SL SIERRA LEONE
+   * VC SAINT VINCENT AND THEN GRENADINES
+   * TO TONGA
+   * TT TRINIDAD AND TOBAGO
+   * UA UKRAINE
+   * WS SAMOA; WESTERN
+   * YE YEMEN
+   * ZZ MISCELLANEOUS ORGANIZATION
+   * MH MARSHALL ISLANDS
+   * HR CROATIA
+   * EU EUROPEAN UNION
+   *
+   * @return a two-character code representing a country
+   */
+  public String getCountry() {
+<span class="nc" id="L307">    return country;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setCountry(String country) {
+<span class="nc" id="L319">    this.country = country;</span>
+<span class="nc" id="L320">  }</span>
+
+
+  /**
+   * In WOD18, a cruise identifier consists of two parts, the ISO 3166-1 country code and the unique cruise number.
+   * The unique cruise number is only unique with respect to the country code. For data for which there is no way to
+   * identify a specific cruise, a cruise number of zero (0) is used.
+   *
+   * @return the unique cruise number per country code
+   */
+  @Nullable
+  public int getCruiseNumber() {
+<span class="nc" id="L332">    return cruiseNumber;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setCruiseNumber(int cruiseNumber) {
+<span class="nc" id="L344">    this.cruiseNumber = cruiseNumber;</span>
+<span class="nc" id="L345">  }</span>
+
+  /**
+   * The alphanumeric cruise identification provided by the originator. If the originator’s code is purely numeric, it will be found in the attributes
+   * with code 7.
+   *
+   * @return the alphanumeric cruise identification provided by the originator or null if not provided
+   */
+  @Nullable
+  public String getOriginatorsCruise() {
+<span class="nc" id="L355">    return originatorsCruise;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setOriginatorsCruise(String originatorsCruise) {
+<span class="nc" id="L367">    this.originatorsCruise = originatorsCruise;</span>
+<span class="nc" id="L368">  }</span>
+
+  /**
+   * A representative timestamp of when the cast data were recorded as the number of milliseconds from 1970/1/1 UTC.
+   *
+   *
+   * If the day value was not recorded, this timestamp assumes the first day of the month. Likewise, if a time value
+   * was not recorded, this timestamp assumes midnight UTC.
+   *
+   * @return timestamp of when the cast data was recorded as the number of milliseconds from 1970/1/1 UTC
+   */
+  public long getTimestamp() {
+<span class="nc" id="L380">    return timestamp;</span>
+  }
+
+  /**
+   *
+   * @param timestamp
+   */
+  @Deprecated
+  public void setTimestamp(long timestamp) {
+<span class="nc" id="L389">    this.timestamp = timestamp;</span>
+<span class="nc" id="L390">  }</span>
+
+  /**
+   * The year the cast data were recorded.
+   *
+   * @return the year the cast data were recorded
+   */
+  public int getYear() {
+<span class="nc" id="L398">    return year;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setYear(int year) {
+<span class="nc" id="L410">    this.year = year;</span>
+<span class="nc" id="L411">  }</span>
+
+  /**
+   * The month the cast data were recorded, 1-12.
+   *
+   * @return the month the cast data were recorded, 1-12
+   */
+  public int getMonth() {
+<span class="nc" id="L419">    return month;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setMonth(int month) {
+<span class="nc" id="L431">    this.month = month;</span>
+<span class="nc" id="L432">  }</span>
+
+  /**
+   *
+   * The day the cast data were recorded, 0-31.
+   *
+   *
+   * Please note that some data have been submitted with a day of zero (0) and we have kept these in the database as such.
+   *
+   * @return
+   */
+  public int getDay() {
+<span class="nc" id="L444">    return day;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setDay(int day) {
+<span class="nc" id="L456">    this.day = day;</span>
+<span class="nc" id="L457">  }</span>
+
+  /**
+   * A floating point representation of the time the data were recorded as 24 based hours with fractional hours.
+   *
+   * Ex.  13:30 clock time = 13.5 in this representation
+   *
+   * @return the time the data were recorded as 24 based hours with fractional hours or null if not available
+   */
+  @Nullable
+  public Double getTime() {
+<span class="nc" id="L468">    return time;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setTime(Double time) {
+<span class="nc" id="L480">    this.time = time;</span>
+<span class="nc" id="L481">  }</span>
+
+  /**
+   * E / W degrees where the cast was recorded. -180.0 - 180.0
+   *
+   * @return E / W degrees where the cast was recorded
+   */
+  public double getLongitude() {
+<span class="nc" id="L489">    return longitude;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setLongitude(double longitude) {
+<span class="nc" id="L501">    this.longitude = longitude;</span>
+<span class="nc" id="L502">  }</span>
+
+  /**
+   * N / S degrees where the cast was recorded. -90.0 - 90.0
+   *
+   * @return N / S degrees where the cast was recorded
+   */
+  public double getLatitude() {
+<span class="nc" id="L510">    return latitude;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setLatitude(double latitude) {
+<span class="nc" id="L522">    this.latitude = latitude;</span>
+<span class="nc" id="L523">  }</span>
+
+  /**
+   * A flag indicating if the cast contains profiles at the observed depths or at standard depths.
+   * Allowed Values:
+   * 0 = Observed depths
+   * 1 = Standard depths: A depth below the sea surface at which water properties should be measured and reported, either directly or by
+   * interpolation, according to the proposal by the International Association of Physical Oceanography in 1936.
+   *
+   * @return
+   */
+  public int getProfileType() {
+<span class="nc" id="L535">    return profileType;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setProfileType(int profileType) {
+<span class="nc" id="L547">    this.profileType = profileType;</span>
+<span class="nc" id="L548">  }</span>
+
+  /**
+   * The alphanumeric station identification provided by the originator. If the originator’s code is purely numeric, it
+   * will be found in the attributes with code 7.
+   *
+   * @return the alphanumeric station identification provided by the originator or null
+   */
+  @Nullable
+  public String getOriginatorsStationCode() {
+<span class="nc" id="L558">    return originatorsStationCode;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setOriginatorsStationCode(String originatorsStationCode) {
+<span class="nc" id="L570">    this.originatorsStationCode = originatorsStationCode;</span>
+<span class="nc" id="L571">  }</span>
+
+  /**
+   * A three-character &lt;a href=&quot;https://en.wikipedia.org/wiki/Geohash&quot;&gt;geohash&lt;/a&gt; derived from the cast's longitude
+   * and latitude.  This can be used to spatially group casts.
+   *
+   * @return a three-character geohash where this cast was recorded
+   */
+  @Nonnull
+  public String getGeohash() {
+<span class="nc" id="L581">    return geohash;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setGeohash(String geohash) {
+<span class="nc" id="L593">    this.geohash = geohash;</span>
+<span class="nc" id="L594">  }</span>
+
+  /**
+   * The {@link Variable}s associated with the cast. These elements contain metadata information specific to each individual measured variable in the
+   * profiles, such as originator’s units, scales, and methods.
+   *
+   *
+   * Common Codes:
+   * 1 NCEI accession number: unique number assigned by NCEI to each batch of data received. Sometimes the variables for a cast are received at different times or from different sources and therefore may have different accession numbers. We have attempted to merge these casts together and kept the source information intact
+   * 2 Project: identifies the research project associated with the data collection.
+   * 3 Scale: The units for temperature and salinity are based on the internationally agreed referenced measurement standards (i.e. ITS Temperature Scale, Practical Salinity Scale, and pH scales). Table 3 provides the detailed list of variables and units
+   * 4 Institution: identifies institution associated with the investigator who sampled the specific variable
+   * 5 Instrument
+   * 6 Methods
+   * 8 Originator’s units
+   * 10 Equilibrator type: describes the design of the instrument used for equilibrating seawater with air in preparation for measuring CO2 concentrations
+   * 11 Filter type and size
+   * 12 Incubation time: 25 is dawn to noon, 26 is noon to dusk; otherwise, value is in hours
+   * 13 CO2 sea warming: temperature change in transporting water from the sea surface to the CO2 analysis site
+   * 15 Analysis temperature: temperature of seawater at the time of CO2 analysis
+   * 16 Uncalibrated: set to 1 if instrument is uncalibrated
+   * 17 Contains nitrite: set to 1 if nitrate value is actually nitrate+nitrite
+   * 18 Normal Standard Seawater batch: the code gives the IAPSO normal standard seawater batch number, P-Series, i.e. code 78 means normal standard seawater batch P78
+   * 19 Adjustment: this is an adjustment (correction) value made to Argo profiling floats. The adjustment is a real value (i.e. decimal number) and is the mean difference between original (real-time) and adjusted (delayed-mode) profile of temperature, salinity, oxygen, or pressure for all values below 500 meters depth. If a profile has an adjustment value (even if this value is 0.0, it indicates that the profile has gone through additional quality control by the Argo project and is considered either adjusted real-time or delayed-mode data
+   *
+   * @return a list of metadata information specific to each individual measured variable
+   */
+  @Nonnull
+  public List&lt;Variable&gt; getVariables() {
+<span class="nc" id="L623">    return variables;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setVariables(List&lt;Variable&gt; variables) {
+<span class="nc bnc" id="L635" title="All 2 branches missed.">    if (variables == null) {</span>
+<span class="nc" id="L636">      variables = new ArrayList&lt;&gt;(0);</span>
+    }
+<span class="nc" id="L638">    this.variables = new ArrayList&lt;&gt;(variables);</span>
+<span class="nc" id="L639">  }</span>
+
+  /**
+   * The {@link PrincipalInvestigator}s associated with the cast, lead scientists or engineers for a particular research cruise or project.
+   *
+   * @return a list of lead scientists or engineers for a particular research cruise or project
+   */
+  @Nonnull
+  public List&lt;PrincipalInvestigator&gt; getPrincipalInvestigators() {
+<span class="nc" id="L648">    return principalInvestigators;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setPrincipalInvestigators(List&lt;PrincipalInvestigator&gt; principalInvestigators) {
+<span class="nc bnc" id="L660" title="All 2 branches missed.">    if (principalInvestigators == null) {</span>
+<span class="nc" id="L661">      principalInvestigators = new ArrayList&lt;&gt;(0);</span>
+    }
+<span class="nc" id="L663">    this.principalInvestigators = new ArrayList&lt;&gt;(principalInvestigators);</span>
+<span class="nc" id="L664">  }</span>
+
+  /**
+   * Additional information about the cast, such as meteorological data, sea floor depth, instrument, ship (platform), institute, and project.
+   *
+   *
+   * Common Codes:
+   * 1 - NCEI accession number: a unique number assigned by NCEI to each group of data received in the NCEI Ocean Archive
+   * 2 - NCEI project: identifies the project associated with the data
+   * 3 - Platform: identifies the platform associated with the data
+   * 4 - Institution: code identifies the institution which sampled the data
+   * 5 - Cast/Tow Number: sequential number representing each over-the-side operation or discrete sampling at a cast or continuous tow
+   * 7 - Originator’s station number: numeric station number assigned by the data submitter or data originator
+   * 8 - Depth Precision: precision of the depth field (number of digits to the right of the decimal)
+   * 9 - Ocean Weather Station: identifies data from the various ocean weather stations
+   * 10 - Bottom depth: depth from water surface to sediment-water interface, in meters;
+   * 11 - Cast duration: duration of the cast, in hours
+   * 12 - Cast Direction: if a direction is not present, down is assumed, description of codes found in
+   * 13 - High-resolution pairs: unique cast number identifying where high-resolution CTD and low-resolution OSD data are both available
+   * 14 - Water Color: a modified Forel-Ule color scale is used
+   * 15 - Water transparency: Secchi disk visibility depth, in meters
+   * 16 - Wave Direction (WMO 0877)
+   * 17 - Wave Height (WMO 1555)
+   * 18 - Sea State (WMO 3700)
+   * 19 - Wind Force (Beaufort Scale)
+   * 20 - Wave Period (WMO 3155 or NCEI 0378)
+   * 21 - Wind Direction (WMO 0877)
+   * 22 - Wind speed: surface or near-surface wind speed, in knots
+   * 23 - Barometric pressure: the atmospheric pressure at sea level due to the gravitational force on the column of air above it (millibar)
+   * 24 - Dry bulb temperature: identical to air temperature, in °C
+   * 25 - Wet bulb temperature: the temperature a parcel of air would have if it were cooled adiabatically with no heat transfer, in °C
+   * 26 - Weather Condition (WMO 4501 and WMO 4677)
+   * 27 - Cloud Type (WMO 0500)
+   * 28 - Cloud Cover (WMO 2700)
+   * 29 - Probe Type
+   * 30 - Calibration Depth: deviation on a bathythermograph (BT) from the zero depth. This difference between points was used to adjust the profile when it was digitized
+   * 31 - Calibration Temperature: deviation on a BT from a 16.7°C reference point. This difference between points was used to adjust the profile when it was digitized
+   * 32 - Recorder Type (WMO 4770)
+   * 33 - Depth Correction: a zero (0) is assigned if the original depth-time equation was used for the XBT data collected after a corrected depth-time equation was introduced; a one (1) is assigned if a corrected depth-time equation was used
+   * 34 - Bottom Hit: a one (1) is assigned if the probe hits the bottom
+   * 35 - Digitization Method (NCEI 0612)
+   * 36 - Digitization Interval (NCEI 0613)
+   * 37 - Data Treatment and Storage (NCEI 0614)
+   * 38 - Trace Correction: average difference between the surface trace and the surface depth line of the grid for a BT
+   * 39 - Temperature Correction (°C): correction for difference between reference temperature and BT reading or correction to the original data by the submitter – in some cases the correction has already been applied
+   * 40 - Instrument for Reference Temperature (NCEI 0615)
+   * 41 - Horizontal Visibility (WMO 4300)
+   * 45 - Absolute Humidity (g·m-3): sometimes referred to as the vapor density, - the ratio of the mass of water vapor present to the volume occupied by the moist air mixture present in the atmosphere
+   * 46 - Reference/Sea Surface Temperature: temperature used to check the probe or a separate measure of sea surface temperature
+   * 47 - Sea Surface Salinity of the layer of sea water nearest to the atmosphere
+   * 48 - Year: in which probe was manufactured
+   * 49 - Speed: ship speed (knots) when probe was dropped
+   * 54 - Depth Fix: equation needed to calculate correct depth
+   * 71 - Real-time: identifies data received over the WMO Global Telecommunication System within 24 hours of measurement. Real-time data is identified with the number one (1)
+   * 72 - XBT Wait: is the time difference between the launch of the probe and the time it begins recording data (NB: this code is no longer used)
+   * 73 - XBT Frequency: is the sampling rate of the recorder (NB: this code is no longer used)
+   * 74 - Oceanographic Measuring Vehicle
+   * 77 - xCO2 in atmosphere (ppm): mole fraction of CO2 in dry gas sample
+   * 84 - ARGOS Fix Code: ARGOS satellite fix and location accuracy
+   * 85 - ARGOS time (hours) from last fix: used to calculate position of APB
+   * 86 - ARGOS time (hours) to next fix: used to calculate position of APB
+   * 87 - Height (meters) of XBT launcher
+   * 88 - Depth of sea surface sensor (meters)
+   * 91 - Database ID: Identifies source of data
+   * 92 - UKHO Bibliographic Reference number: source for digitized cards from the United Kingdom Hydrographic Office (vessels, institutes, sea area)
+   * 93 - Consecutive profile in tow segment: used to identify one up or down half-cycle in underway data
+   * 94 - WMO Identification code: code assigned to buoys or profiling floats by WMO
+   * 95 - Originator’s Depth Unit: units used by the data originator to report depth values. If code is absent, depths were reported in meters
+   * 96 - Originator’s Flags: These flags are assigned only to the observed depth data. If this code is absent, there are no originator’s flags.
+   * 97 - Water Sampler: devices used to capture water sample (bucket, specific bottle type
+   * 98 - ARGOS ID number: assigned by the ARGOS project office
+   * 99 - Time Stamp: in format YYYYJJJ (where YYYY=year, JJJ=Julian year day) time- stamp when the ASCII version of a cast was created.
+   *
+   * @return a list of {@link Attribute}s with additional information about the cast
+   */
+  @Nonnull
+  public List&lt;Attribute&gt; getAttributes() {
+<span class="nc" id="L741">    return attributes;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setAttributes(List&lt;Attribute&gt; attributes) {
+<span class="nc bnc" id="L753" title="All 2 branches missed.">    if (attributes == null) {</span>
+<span class="nc" id="L754">      attributes = new ArrayList&lt;&gt;(0);</span>
+    }
+<span class="nc" id="L756">    this.attributes = new ArrayList&lt;&gt;(attributes);</span>
+<span class="nc" id="L757">  }</span>
+
+  /**
+   * Information necessary to understand how biological data were sampled. “Biological” data are defined as plankton biomass (weights or volumes) and taxa-specific observations.
+   *
+   * Common Codes:
+   * 1 - Water volume filtered: total volume of water filtered by the sampling gear (m3)
+   * 2 - Sampling duration: time over which the sampling gear was towed, in minutes
+   * 3 - Mesh size: pore size of the sampling device, in micrometers
+   * 4 - Type of tow: towing method used (e.g., horizontal, vertical, oblique)
+   * 5 - Large removed volume: the minimum volume criteria for removing large plankters, in ml, see also code 12
+   * 6 - Large plankters removed: if large plankters were specified as being removed (1) or not removed (2), this code is added
+   * 7 - Gear code: type of gear used (e.g., plankton net, bottle, MOCNESS)
+   * 8 - Sampler volume: internal volume of the sampling gear (e.g., Niskin bottle), in liters
+   * 9 - Net mouth area: mouth or opening area of the sampling gear, in m2. If mouth diameter was provided, area was calculated as: area = π (0.5 diameter)^2
+   * 10 - Preservative: type of preservative used to preserve the plankton sample
+   * 11 - Weight method: method used for weighing the plankton sample
+   * 12 - Large removed length: the minimum size/length criteria for removing large plankters, in cm, see also code 5
+   * 13 - Count method: method used for counting the plankton sample
+   * 14 - Tow distance: distance over which sampling gear was towed, in meters
+   * 15 - Average tow speed: average speed used to tow the sampling gear, in knots
+   * 16 - Sampling start time: GMT
+   * 18 - Flowmeter type: the brand and/or model of the flowmeter used
+   * 19 - Flowmeter calibration: the calibration frequency for the flowmeter
+   * 20 - Counting Institution: the Institution responsible for identifying and counting the taxa-specific sample
+   * 21 - Voucher Institution: the location (Institution) of the taxa-specific sample voucher
+   * 22 - Wire angle start: wire angle of the towing apparatus at sampling start, in degrees
+   * 23 - Wire angle end: wire angle of the towing apparatus at sampling end, in degrees
+   * 24 - Depth determination method: a code indicating that depth was calculated from wire angle and length or a PI-specific “target depth”
+   * 25 - Volume method: the method used for measuring the volume of the plankton sample
+   * 30 - Accession number for biology: NCEI dataset identification for the biological component of the current cast
+   *
+   * @return a list of {@link Attribute}s with biological information
+   */
+  @Nonnull
+  public List&lt;Attribute&gt; getBiologicalAttributes() {
+<span class="nc" id="L793">    return biologicalAttributes;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setBiologicalAttributes(List&lt;Attribute&gt; biologicalAttributes) {
+<span class="nc bnc" id="L805" title="All 2 branches missed.">    if (biologicalAttributes == null) {</span>
+<span class="nc" id="L806">      biologicalAttributes = new ArrayList&lt;&gt;(0);</span>
+    }
+<span class="nc" id="L808">    this.biologicalAttributes = new ArrayList&lt;&gt;(biologicalAttributes);</span>
+<span class="nc" id="L809">  }</span>
+
+  /**
+   * The typical plankton cast, as represented in WOD18, stores taxon specific and/or biomass data in individual sets of unique observations, called
+   * “Taxa-Record”. Each “Taxa-Record” contains a taxonomic description, depth range (the upper and lower depth) of observation,
+   * the original measurements (e.g., abundance, biomass or volume), and all provided qualifiers (e.g., lifestage, sex, size, etc.)
+   * required to represent that plankton observation.
+   *
+   *
+   * @return a list of {@link TaxonomicDataset}
+   */
+  @Nonnull
+  public List&lt;TaxonomicDataset&gt; getTaxonomicDatasets() {
+<span class="nc" id="L822">    return taxonomicDatasets;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setTaxonomicDatasets(List&lt;TaxonomicDataset&gt; taxonomicDatasets) {
+<span class="nc bnc" id="L834" title="All 2 branches missed.">    if (taxonomicDatasets == null) {</span>
+<span class="nc" id="L835">      taxonomicDatasets = new ArrayList&lt;&gt;(0);</span>
+    }
+<span class="nc" id="L837">    this.taxonomicDatasets = taxonomicDatasets;</span>
+<span class="nc" id="L838">  }</span>
+
+  /**
+   * A list of {@link Depth}s representing variable values recorded at different depths on the cast.
+   *
+   * @return a list of {@link Depth}s representing variable values recorded at different depths on the cast
+   */
+  @Nonnull
+  public List&lt;Depth&gt; getDepths() {
+<span class="nc" id="L847">    return depths;</span>
+  }
+
+  /**
+   * DO NOT USE
+   *
+   * This is only public in order to allow for Spark conversion.
+   *
+   * @deprecated use {@link  #builder()}
+   */
+  @Deprecated
+  public void setDepths(List&lt;Depth&gt; depths) {
+<span class="nc bnc" id="L859" title="All 2 branches missed.">    if (depths == null) {</span>
+<span class="nc" id="L860">      depths = new ArrayList&lt;&gt;(0);</span>
+    }
+<span class="nc" id="L862">    this.depths = depths;</span>
+<span class="nc" id="L863">  }</span>
+
+  @Override
+  public boolean equals(Object o) {
+<span class="nc bnc" id="L867" title="All 2 branches missed.">    if (this == o) {</span>
+<span class="nc" id="L868">      return true;</span>
+    }
+<span class="nc bnc" id="L870" title="All 4 branches missed.">    if (o == null || getClass() != o.getClass()) {</span>
+<span class="nc" id="L871">      return false;</span>
+    }
+<span class="nc" id="L873">    Cast cast = (Cast) o;</span>
+<span class="nc bnc" id="L874" title="All 10 branches missed.">    return castNumber == cast.castNumber &amp;&amp; timestamp == cast.timestamp &amp;&amp; year == cast.year &amp;&amp; month == cast.month &amp;&amp; day == cast.day</span>
+<span class="nc bnc" id="L875" title="All 4 branches missed.">        &amp;&amp; Double.compare(cast.time, time) == 0 &amp;&amp; Double.compare(cast.longitude, longitude) == 0</span>
+<span class="nc bnc" id="L876" title="All 6 branches missed.">        &amp;&amp; Double.compare(cast.latitude, latitude) == 0 &amp;&amp; profileType == cast.profileType &amp;&amp; Objects.equals(dataset, cast.dataset)</span>
+<span class="nc bnc" id="L877" title="All 4 branches missed.">        &amp;&amp; Objects.equals(cruiseNumber, cast.cruiseNumber) &amp;&amp; Objects.equals(originatorsCruise, cast.originatorsCruise)</span>
+<span class="nc bnc" id="L878" title="All 4 branches missed.">        &amp;&amp; Objects.equals(originatorsStationCode, cast.originatorsStationCode) &amp;&amp; Objects.equals(geohash, cast.geohash)</span>
+<span class="nc bnc" id="L879" title="All 4 branches missed.">        &amp;&amp; Objects.equals(variables, cast.variables) &amp;&amp; Objects.equals(principalInvestigators, cast.principalInvestigators)</span>
+<span class="nc bnc" id="L880" title="All 4 branches missed.">        &amp;&amp; Objects.equals(attributes, cast.attributes) &amp;&amp; Objects.equals(biologicalAttributes, cast.biologicalAttributes)</span>
+<span class="nc bnc" id="L881" title="All 4 branches missed.">        &amp;&amp; Objects.equals(taxonomicDatasets, cast.taxonomicDatasets) &amp;&amp; Objects.equals(depths, cast.depths)</span>
+<span class="nc bnc" id="L882" title="All 2 branches missed.">        &amp;&amp; Objects.equals(country, cast.country);</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L887">    return Objects.hash(dataset, castNumber, country, cruiseNumber, originatorsCruise, timestamp, year, month, day, time, longitude, latitude, profileType,</span>
+        originatorsStationCode, geohash, variables, principalInvestigators, attributes, biologicalAttributes, taxonomicDatasets, depths);
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L893">    return &quot;Cast{&quot; +</span>
+        &quot;dataset='&quot; + dataset + '\'' +
+        &quot;, castNumber=&quot; + castNumber +
+        &quot;, country='&quot; + country + '\'' +
+        &quot;, cruiseNumber=&quot; + cruiseNumber +
+        &quot;, originatorsCruise='&quot; + originatorsCruise + '\'' +
+        &quot;, timestamp=&quot; + timestamp +
+        &quot;, year=&quot; + year +
+        &quot;, month=&quot; + month +
+        &quot;, day=&quot; + day +
+        &quot;, time=&quot; + time +
+        &quot;, longitude=&quot; + longitude +
+        &quot;, latitude=&quot; + latitude +
+        &quot;, profileType=&quot; + profileType +
+        &quot;, originatorsStationCode='&quot; + originatorsStationCode + '\'' +
+        &quot;, geohash='&quot; + geohash + '\'' +
+        &quot;, variables=&quot; + variables +
+        &quot;, principalInvestigators=&quot; + principalInvestigators +
+        &quot;, attributes=&quot; + attributes +
+        &quot;, biologicalAttributes=&quot; + biologicalAttributes +
+        &quot;, taxonomicDatasets=&quot; + taxonomicDatasets +
+        &quot;, depths=&quot; + depths +
+        '}';
+  }
+
+  /**
+   *
+   * @return
+   */
+  public static Builder builder() {
+<span class="nc" id="L923">    return new Builder();</span>
+  }
+
+  /**
+   *
+   * @param source
+   * @return
+   */
+  public static Builder builder(Cast source) {
+<span class="nc" id="L932">    return new Builder(source);</span>
+  }
+
+  /**
+   *
+   * @param row
+   * @return
+   */
+  public static Builder builder(Row row) {
+<span class="nc" id="L941">    return new Builder(row);</span>
+  }
+
+  /**
+   *
+   */
+  public static class Builder {
+
+    private String dataset;
+    private int castNumber;
+    private String country;
+    private int cruiseNumber;
+    private String originatorsCruise;
+    private long timestamp;
+    private int year;
+    private int month;
+    private int day;
+    private Double time;
+    private double longitude;
+    private double latitude;
+    private int profileType;
+    private String originatorsStationCode;
+    private String geohash;
+<span class="nc" id="L964">    private List&lt;Variable&gt; variables = new ArrayList&lt;&gt;(0);</span>
+<span class="nc" id="L965">    private List&lt;PrincipalInvestigator&gt; principalInvestigators = new ArrayList&lt;&gt;(0);</span>
+<span class="nc" id="L966">    private List&lt;Attribute&gt; attributes = new ArrayList&lt;&gt;(0);</span>
+<span class="nc" id="L967">    private List&lt;Attribute&gt; biologicalAttributes = new ArrayList&lt;&gt;(0);</span>
+<span class="nc" id="L968">    private List&lt;TaxonomicDataset&gt; taxonomicDatasets = new ArrayList&lt;&gt;(0);</span>
+<span class="nc" id="L969">    private List&lt;Depth&gt; depths = new ArrayList&lt;&gt;(0);</span>
+
+<span class="nc" id="L971">    private Builder() {</span>
+<span class="nc" id="L972">    }</span>
+
+<span class="nc" id="L974">    private Builder(Cast source) {</span>
+<span class="nc" id="L975">      dataset = source.getDataset();</span>
+<span class="nc" id="L976">      castNumber = source.getCastNumber();</span>
+<span class="nc" id="L977">      cruiseNumber = source.getCruiseNumber();</span>
+<span class="nc" id="L978">      country = source.getCountry();</span>
+<span class="nc" id="L979">      originatorsCruise = source.getOriginatorsCruise();</span>
+<span class="nc" id="L980">      timestamp = source.getTimestamp();</span>
+<span class="nc" id="L981">      year = source.getYear();</span>
+<span class="nc" id="L982">      month = source.getMonth();</span>
+<span class="nc" id="L983">      day = source.getDay();</span>
+<span class="nc" id="L984">      time = source.getTime();</span>
+<span class="nc" id="L985">      longitude = source.getLongitude();</span>
+<span class="nc" id="L986">      latitude = source.getLatitude();</span>
+<span class="nc" id="L987">      profileType = source.getProfileType();</span>
+<span class="nc" id="L988">      originatorsStationCode = source.getOriginatorsStationCode();</span>
+<span class="nc" id="L989">      geohash = source.getGeohash();</span>
+<span class="nc" id="L990">      variables = source.getVariables();</span>
+<span class="nc" id="L991">      principalInvestigators = source.getPrincipalInvestigators();</span>
+<span class="nc" id="L992">      attributes = source.getAttributes();</span>
+<span class="nc" id="L993">      biologicalAttributes = source.getBiologicalAttributes();</span>
+<span class="nc" id="L994">      taxonomicDatasets = source.getTaxonomicDatasets();</span>
+<span class="nc" id="L995">      depths = source.getDepths();</span>
+<span class="nc" id="L996">    }</span>
+
+<span class="nc" id="L998">    private Builder(Row row) {</span>
+<span class="nc" id="L999">      dataset = row.getAs(&quot;dataset&quot;);</span>
+<span class="nc" id="L1000">      castNumber = row.getAs(&quot;castNumber&quot;);</span>
+<span class="nc" id="L1001">      cruiseNumber = row.getAs(&quot;cruiseNumber&quot;);</span>
+<span class="nc" id="L1002">      country = row.getAs(&quot;country&quot;);</span>
+<span class="nc" id="L1003">      originatorsCruise = row.getAs(&quot;originatorsCruise&quot;);</span>
+<span class="nc" id="L1004">      timestamp = row.getAs(&quot;timestamp&quot;);</span>
+<span class="nc" id="L1005">      year = row.getAs(&quot;year&quot;);</span>
+<span class="nc" id="L1006">      month = row.getAs(&quot;month&quot;);</span>
+<span class="nc" id="L1007">      day = row.getAs(&quot;day&quot;);</span>
+<span class="nc" id="L1008">      time = row.getAs(&quot;time&quot;);</span>
+<span class="nc" id="L1009">      longitude = row.getAs(&quot;longitude&quot;);</span>
+<span class="nc" id="L1010">      latitude = row.getAs(&quot;latitude&quot;);</span>
+<span class="nc" id="L1011">      profileType = row.getAs(&quot;profileType&quot;);</span>
+<span class="nc" id="L1012">      originatorsStationCode = row.getAs(&quot;originatorsStationCode&quot;);</span>
+<span class="nc" id="L1013">      geohash = row.getAs(&quot;geohash&quot;);</span>
+<span class="nc" id="L1014">      variables = RowUtils.getAs(row, &quot;variables&quot;, r -&gt; Variable.builder(r).build());</span>
+<span class="nc" id="L1015">      principalInvestigators = RowUtils.getAs(row, &quot;principalInvestigators&quot;, r -&gt; PrincipalInvestigator.builder(r).build());</span>
+<span class="nc" id="L1016">      attributes = RowUtils.getAs(row, &quot;attributes&quot;, r -&gt; Attribute.builder(r).build());</span>
+<span class="nc" id="L1017">      biologicalAttributes = RowUtils.getAs(row, &quot;biologicalAttributes&quot;, r -&gt; Attribute.builder(r).build());</span>
+<span class="nc" id="L1018">      taxonomicDatasets = RowUtils.getAs(row, &quot;taxonomicDatasets&quot;, r -&gt; TaxonomicDataset.builder(r).build());</span>
+<span class="nc" id="L1019">      depths = RowUtils.getAs(row, &quot;depths&quot;, r -&gt; Depth.builder(r).build());</span>
+<span class="nc" id="L1020">    }</span>
+
+    /**
+     *
+     * @param dataset
+     * @return
+     */
+    public Builder withDataset(String dataset) {
+<span class="nc" id="L1028">      this.dataset = dataset;</span>
+<span class="nc" id="L1029">      return this;</span>
+    }
+
+    /**
+     *
+     * @param castNumber
+     * @return
+     */
+    public Builder withCastNumber(int castNumber) {
+<span class="nc" id="L1038">      this.castNumber = castNumber;</span>
+<span class="nc" id="L1039">      return this;</span>
+    }
+
+    /**
+     *
+     * @param cruiseNumber
+     * @return
+     */
+    public Builder withCruiseNumber(int cruiseNumber) {
+<span class="nc" id="L1048">      this.cruiseNumber = cruiseNumber;</span>
+<span class="nc" id="L1049">      return this;</span>
+    }
+
+    /**
+     *
+     * @param country
+     * @return
+     */
+    public  Builder withCountry(String country){
+<span class="nc" id="L1058">      this.country = country;</span>
+<span class="nc" id="L1059">      return this;</span>
+    }
+
+    /**
+     *
+     * @param originatorsCruise
+     * @return
+     */
+    public Builder withOriginatorsCruise(String originatorsCruise) {
+<span class="nc" id="L1068">      this.originatorsCruise = originatorsCruise;</span>
+<span class="nc" id="L1069">      return this;</span>
+    }
+
+    /**
+     *
+     * @param timestamp
+     * @return
+     */
+    public Builder withTimestamp(long timestamp) {
+<span class="nc" id="L1078">      this.timestamp = timestamp;</span>
+<span class="nc" id="L1079">      return this;</span>
+    }
+
+    /**
+     *
+     * @param year
+     * @return
+     */
+    public Builder withYear(int year) {
+<span class="nc" id="L1088">      this.year = year;</span>
+<span class="nc" id="L1089">      return this;</span>
+    }
+
+    /**
+     *
+     * @param month
+     * @return
+     */
+    public Builder withMonth(int month) {
+<span class="nc" id="L1098">      this.month = month;</span>
+<span class="nc" id="L1099">      return this;</span>
+    }
+
+    /**
+     *
+     * @param day
+     * @return
+     */
+    public Builder withDay(int day) {
+<span class="nc" id="L1108">      this.day = day;</span>
+<span class="nc" id="L1109">      return this;</span>
+    }
+
+    /**
+     *
+     * @param time
+     * @return
+     */
+    public Builder withTime(Double time) {
+<span class="nc" id="L1118">      this.time = time;</span>
+<span class="nc" id="L1119">      return this;</span>
+    }
+
+    /**
+     *
+     * @param longitude
+     * @return
+     */
+    public Builder withLongitude(double longitude) {
+<span class="nc" id="L1128">      this.longitude = longitude;</span>
+<span class="nc" id="L1129">      return this;</span>
+    }
+
+    /**
+     *
+     * @param latitude
+     * @return
+     */
+    public Builder withLatitude(double latitude) {
+<span class="nc" id="L1138">      this.latitude = latitude;</span>
+<span class="nc" id="L1139">      return this;</span>
+    }
+
+    /**
+     *
+     * @param profileType
+     * @return
+     */
+    public Builder withProfileType(int profileType) {
+<span class="nc" id="L1148">      this.profileType = profileType;</span>
+<span class="nc" id="L1149">      return this;</span>
+    }
+
+    /**
+     *
+     * @param originatorsStationCode
+     * @return
+     */
+    public Builder withOriginatorsStationCode(String originatorsStationCode) {
+<span class="nc" id="L1158">      this.originatorsStationCode = originatorsStationCode;</span>
+<span class="nc" id="L1159">      return this;</span>
+    }
+
+    /**
+     *
+     * @param geohash
+     * @return
+     */
+    public Builder withGeohash(String geohash) {
+<span class="nc" id="L1168">      this.geohash = geohash;</span>
+<span class="nc" id="L1169">      return this;</span>
+    }
+
+    /**
+     *
+     * @param variables
+     * @return
+     */
+    public Builder withVariables(List&lt;Variable&gt; variables) {
+<span class="nc bnc" id="L1178" title="All 2 branches missed.">      this.variables = variables == null ? new ArrayList&lt;&gt;(0) : new ArrayList&lt;&gt;(variables);</span>
+<span class="nc" id="L1179">      return this;</span>
+    }
+
+    /**
+     *
+     * @param principalInvestigators
+     * @return
+     */
+    public Builder withPrincipalInvestigators(List&lt;PrincipalInvestigator&gt; principalInvestigators) {
+<span class="nc bnc" id="L1188" title="All 2 branches missed.">      this.principalInvestigators = principalInvestigators == null ? new ArrayList&lt;&gt;(0) : new ArrayList&lt;&gt;(principalInvestigators);</span>
+<span class="nc" id="L1189">      return this;</span>
+    }
+
+    /**
+     *
+     * @param attributes
+     * @return
+     */
+    public Builder withAttributes(List&lt;Attribute&gt; attributes) {
+<span class="nc bnc" id="L1198" title="All 2 branches missed.">      this.attributes = attributes == null ? new ArrayList&lt;&gt;(0) : new ArrayList&lt;&gt;(attributes);</span>
+<span class="nc" id="L1199">      return this;</span>
+    }
+
+    /**
+     *
+     * @param biologicalAttributes
+     * @return
+     */
+    public Builder withBiologicalAttributes(List&lt;Attribute&gt; biologicalAttributes) {
+<span class="nc bnc" id="L1208" title="All 2 branches missed.">      this.biologicalAttributes = biologicalAttributes == null ? new ArrayList&lt;&gt;(0) : new ArrayList&lt;&gt;(biologicalAttributes);</span>
+<span class="nc" id="L1209">      return this;</span>
+    }
+
+    /**
+     *
+     * @param taxonomicDatasets
+     * @return
+     */
+    public Builder withTaxonomicDatasets(List&lt;TaxonomicDataset&gt; taxonomicDatasets) {
+<span class="nc bnc" id="L1218" title="All 2 branches missed.">      this.taxonomicDatasets = taxonomicDatasets == null ? new ArrayList&lt;&gt;(0) : new ArrayList&lt;&gt;(taxonomicDatasets);</span>
+<span class="nc" id="L1219">      return this;</span>
+    }
+
+    /**
+     *
+     * @param depths
+     * @return
+     */
+    public Builder withDepths(List&lt;Depth&gt; depths) {
+<span class="nc bnc" id="L1228" title="All 2 branches missed.">      this.depths = depths == null ? new ArrayList&lt;&gt;(0) : new ArrayList&lt;&gt;(depths);</span>
+<span class="nc" id="L1229">      return this;</span>
+    }
+
+    /**
+     *
+     * @return
+     */
+    public Cast build() {
+<span class="nc" id="L1237">      return new Cast(</span>
+          dataset,
+          castNumber,
+          country,
+          cruiseNumber,
+          originatorsCruise,
+          timestamp,
+          year,
+          month,
+          day,
+          time,
+          longitude,
+          latitude,
+          profileType,
+          originatorsStationCode,
+          geohash,
+          variables,
+          principalInvestigators,
+          attributes,
+          biologicalAttributes,
+          taxonomicDatasets,
+          depths
+      );
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

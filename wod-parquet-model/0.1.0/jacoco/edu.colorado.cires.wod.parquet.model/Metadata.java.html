@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Metadata.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg.wod:wod-parquet-model</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.wod.parquet.model</a> &gt; <span class="el_source">Metadata.java</span></div><h1>Metadata.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.wod.parquet.model;
+
+import java.io.Serializable;
+import java.util.Objects;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
+
+public class Metadata implements Serializable {
+
+  private static final long serialVersionUID = 0L;
+
+  public static StructType structType() {
+<span class="nc" id="L16">    return new StructType(new StructField[]{</span>
+<span class="nc" id="L17">        new StructField(&quot;code&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L18">        new StructField(&quot;value&quot;, DataTypes.DoubleType, false, org.apache.spark.sql.types.Metadata.empty())</span>
+    });
+  }
+
+  public Row asRow() {
+<span class="nc" id="L23">    return new GenericRowWithSchema(new Object[]{code, value}, structType());</span>
+  }
+
+  private int code;
+  private double value;
+
+  @Deprecated
+<span class="nc" id="L30">  public Metadata() {</span>
+<span class="nc" id="L31">  }</span>
+
+<span class="nc" id="L33">  private Metadata(int code, double value) {</span>
+<span class="nc" id="L34">    this.code = code;</span>
+<span class="nc" id="L35">    this.value = value;</span>
+<span class="nc" id="L36">  }</span>
+
+  /**
+   *
+   * ID1
+   * DESCRIPTION
+   * Accession number
+   * Project
+   * Scale
+   * Institution
+   * Instrument 3.2 16 Methods 3.3 17 Originator’s units     3.4 18 Equilibrator type     3.5 19
+   * App2 ID1
+   * DESCRIPTION App2
+   * Filter type and size 3.6 Incubation time 3.7 CO2 sea warming
+   * Analysis temperature
+   * Uncalibrated
+   * Contains nitrite
+   * Normal Standard Seawater batch Adjustment
+   *
+   *
+   * @return
+   */
+  public int getCode() {
+<span class="nc" id="L59">    return code;</span>
+  }
+
+  @Deprecated
+  public void setCode(int code) {
+<span class="nc" id="L64">    this.code = code;</span>
+<span class="nc" id="L65">  }</span>
+
+  public double getValue() {
+<span class="nc" id="L68">    return value;</span>
+  }
+
+  @Deprecated
+  public void setValue(double value) {
+<span class="nc" id="L73">    this.value = value;</span>
+<span class="nc" id="L74">  }</span>
+
+  @Override
+  public boolean equals(Object o) {
+<span class="nc bnc" id="L78" title="All 2 branches missed.">    if (this == o) {</span>
+<span class="nc" id="L79">      return true;</span>
+    }
+<span class="nc bnc" id="L81" title="All 4 branches missed.">    if (o == null || getClass() != o.getClass()) {</span>
+<span class="nc" id="L82">      return false;</span>
+    }
+<span class="nc" id="L84">    Metadata metadata = (Metadata) o;</span>
+<span class="nc bnc" id="L85" title="All 4 branches missed.">    return code == metadata.code &amp;&amp; Double.compare(metadata.value, value) == 0;</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L90">    return Objects.hash(code, value);</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L95">    return &quot;Metadata{&quot; +</span>
+        &quot;code=&quot; + code +
+        &quot;, value=&quot; + value +
+        '}';
+  }
+
+  public static Builder builder() {
+<span class="nc" id="L102">    return new Builder();</span>
+  }
+
+  public static Builder builder(Metadata source) {
+<span class="nc" id="L106">    return new Builder(source);</span>
+  }
+
+  public static Builder builder(Row row) {
+<span class="nc" id="L110">    return new Builder(row);</span>
+  }
+
+  public static class Builder {
+
+    private int code;
+    private double value;
+
+    private Builder() {
+
+    }
+
+<span class="nc" id="L122">    private Builder(Metadata source) {</span>
+<span class="nc" id="L123">      code = source.getCode();</span>
+<span class="nc" id="L124">      value = source.getValue();</span>
+<span class="nc" id="L125">    }</span>
+
+<span class="nc" id="L127">    private Builder(Row row) {</span>
+<span class="nc" id="L128">      code = row.getAs(&quot;code&quot;);</span>
+<span class="nc" id="L129">      value = row.getAs(&quot;value&quot;);</span>
+<span class="nc" id="L130">    }</span>
+
+    public Builder withCode(int code) {
+<span class="nc" id="L133">      this.code = code;</span>
+<span class="nc" id="L134">      return this;</span>
+    }
+
+    public Builder withValue(double value) {
+<span class="nc" id="L138">      this.value = value;</span>
+<span class="nc" id="L139">      return this;</span>
+    }
+
+    public Metadata build() {
+<span class="nc" id="L143">      return new Metadata(code, value);</span>
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

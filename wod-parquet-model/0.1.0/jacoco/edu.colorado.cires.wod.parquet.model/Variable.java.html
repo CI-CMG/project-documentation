@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Variable.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg.wod:wod-parquet-model</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.wod.parquet.model</a> &gt; <span class="el_source">Variable.java</span></div><h1>Variable.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.wod.parquet.model;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import javax.annotation.Nonnull;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
+
+/**
+ *
+ * (3) Variable-specific secondary header: Information specific to each individual measured variable such as originator’s units, scales, and methods.
+ *
+ */
+public class Variable implements Serializable {
+
+  private static final long serialVersionUID = 0L;
+
+  public static StructType structType() {
+<span class="nc" id="L26">    return new StructType(new StructField[]{</span>
+<span class="nc" id="L27">        new StructField(&quot;code&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L28">        new StructField(&quot;metadata&quot;, DataTypes.createArrayType(Metadata.structType(), false), false, org.apache.spark.sql.types.Metadata.empty())</span>
+    });
+  }
+
+  public Row asRow() {
+<span class="nc" id="L33">    return new GenericRowWithSchema(new Object[]{code, metadata}, structType());</span>
+  }
+
+  private int code;
+  private List&lt;Metadata&gt; metadata;
+
+  public static Builder builder() {
+<span class="nc" id="L40">    return new Builder();</span>
+  }
+
+  public static Builder builder(Variable source) {
+<span class="nc" id="L44">    return new Builder(source);</span>
+  }
+
+  public static Builder builder(Row row) {
+<span class="nc" id="L48">    return new Builder(row);</span>
+  }
+
+  @Deprecated
+<span class="nc" id="L52">  public Variable() {</span>
+
+<span class="nc" id="L54">  }</span>
+
+<span class="nc" id="L56">  private Variable(int code, List&lt;Metadata&gt; metadata) {</span>
+<span class="nc" id="L57">    this.code = code;</span>
+<span class="nc" id="L58">    this.metadata = Collections.unmodifiableList(metadata);</span>
+<span class="nc" id="L59">  }</span>
+
+  /**
+   * 1 NCEI Accession Number
+   * 2 NCEI Project Code
+   * 3 WOD Platform Code
+   * 4 NCEI Institution Code
+   * 5 Cast/Tow number
+   * 7 Originator’s station number
+   * 8 Depth Precision
+   * 9 Ocean Weather Station
+   * 10 Bottom Depth (meters)
+   * 11 Cast Duration (hours)
+   * 12 Cast Direction (down assumed)
+   * 13 High-resolution pairs
+   * 14 Water Color
+   * 15 Water Transparency (Secchi disk)
+   * 16 Wave Direction (WMO 0877 or NCEI 0110)
+   * 17 Wave Height (WMO 1555 or NCEI 0104)
+   * 18 Sea State (WMO 3700 or NCEI 0109)
+   * 19 Wind Force (Beaufort scale or NCEI 0052)
+   * 20 Wave Period (WMO 3155 or NCEI 0378)
+   * 21 Wind Direction (WMO 0877 or NCEI 0110)
+   * 22 Wind Speed (knots)
+   * 23 Barometric Pressure (millibars)
+   * 24 Dry Bulb Temperature (°C)
+   * 25 Wet Bulb Temperature (°C)
+   * 26 Weather Conditions (WMO 4501/4677)
+   * 27 Cloud Type (WMO 0500 or NCEI 0053)
+   * 28 Cloud Cover (WMO 2700 or NCEI 0105)
+   * 29 Probe Type
+   * 30 Calibration Depth
+   * 31 Calibration Temperature
+   * 32 Recorder (WMO 4770)
+   * 33 Depth Correction
+   * 34 Bottom Hit
+   * App2 ID1
+   * File 35 File 36
+   * File 37 File 38
+   * 39
+   * 40
+   * 41 2.1 45 46 47 2.2 48
+   * 49
+   * 2.3 54
+   * 71
+   * 2.4 72
+   * 2.5 73
+   * 2.6 74 2.7 77
+   * 2.8 84 2.9 85 86 87 88 91 2.10 92 2.11 93 2.12 94 2.13 95 96
+   * 97 2.14 98
+   * 99
+   * DESCRIPTION App2
+   * Digitization Method (NCEI 0612) 2.15
+   * Digitization Interval (NCEI 0613) 2.16
+   * Data Treatment and Storage Method (NCEI 2.17 0614)
+   * Trace Correction Temperature Correction
+   * Instrument for reference temperature (NCEI 2.18 0615)
+   * Horizontal visibility (WMO Code 4300) 2.19 Absolute Humidity (g/m3)
+   * Reference/Sea Surface Temperature
+   * Sea Surface Salinity
+   * Year in which probe was manufactured
+   * Speed of ship (knots) when probe was dropped
+   * Depth fix 2.20 Real time
+   * XBT Wait (code no longer used)
+   * XBT Frequency (code no longer used) Oceanographic measuring vehicle 2.21 xCO2 in atmosphere (ppm)
+   * ARGOS fix code 2.24 ARGOS time (hours) from last fix
+   * ARGOS time (hours) to next fix
+   * Height (meters) of XBT launch
+   * Depth of sea surface sensor
+   * Database ID 2.25 UKHO Bibliographic Reference Number 2.26 Consecutive profile in a tow segment
+   * WMO Identification Code
+   * Originator’s Depth unit 2.27 Originator’s flags 2.28
+   * Water Sampler 2.29
+   * ARGOS ID number
+   * Time stamp (YYYYJJJ, Y=year, J= year day) to indicate when ASCII version of cast was
+   * d
+   *
+   *
+   * @return
+   */
+  public int getCode() {
+<span class="nc" id="L140">    return code;</span>
+  }
+
+  @Deprecated
+  public void setCode(int code) {
+<span class="nc" id="L145">    this.code = code;</span>
+<span class="nc" id="L146">  }</span>
+
+  @Nonnull
+  public List&lt;Metadata&gt; getMetadata() {
+<span class="nc" id="L150">    return metadata;</span>
+  }
+
+  @Deprecated
+  public void setMetadata(List&lt;Metadata&gt; metadata) {
+<span class="nc bnc" id="L155" title="All 2 branches missed.">    if (metadata == null) {</span>
+<span class="nc" id="L156">      metadata = new ArrayList&lt;&gt;(0);</span>
+    }
+<span class="nc" id="L158">    this.metadata = metadata;</span>
+<span class="nc" id="L159">  }</span>
+
+  @Override
+  public boolean equals(Object o) {
+<span class="nc bnc" id="L163" title="All 2 branches missed.">    if (this == o) {</span>
+<span class="nc" id="L164">      return true;</span>
+    }
+<span class="nc bnc" id="L166" title="All 4 branches missed.">    if (o == null || getClass() != o.getClass()) {</span>
+<span class="nc" id="L167">      return false;</span>
+    }
+<span class="nc" id="L169">    Variable variable = (Variable) o;</span>
+<span class="nc bnc" id="L170" title="All 4 branches missed.">    return code == variable.code &amp;&amp; Objects.equals(metadata, variable.metadata);</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L175">    return Objects.hash(code, metadata);</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L180">    return &quot;Variable{&quot; +</span>
+        &quot;code=&quot; + code +
+        &quot;, metadata=&quot; + metadata +
+        '}';
+  }
+
+  public static class Builder {
+
+    private int code;
+<span class="nc" id="L189">    private List&lt;Metadata&gt; metadata = new ArrayList&lt;&gt;(0);</span>
+
+<span class="nc" id="L191">    private Builder() {</span>
+
+<span class="nc" id="L193">    }</span>
+
+<span class="nc" id="L195">    private Builder(Variable source) {</span>
+<span class="nc" id="L196">      code = source.getCode();</span>
+<span class="nc" id="L197">      metadata = source.getMetadata();</span>
+<span class="nc" id="L198">    }</span>
+
+<span class="nc" id="L200">    private Builder(Row row) {</span>
+<span class="nc" id="L201">      code = row.getAs(&quot;code&quot;);</span>
+<span class="nc" id="L202">      metadata = RowUtils.getAs(row, &quot;metadata&quot;, r -&gt; Metadata.builder(r).build());</span>
+<span class="nc" id="L203">    }</span>
+
+    public Builder withCode(int code) {
+<span class="nc" id="L206">      this.code = code;</span>
+<span class="nc" id="L207">      return this;</span>
+    }
+
+    public Builder withMetadata(List&lt;Metadata&gt; metadata) {
+<span class="nc bnc" id="L211" title="All 2 branches missed.">      if (metadata == null) {</span>
+<span class="nc" id="L212">        metadata = new ArrayList&lt;&gt;(0);</span>
+      }
+<span class="nc" id="L214">      this.metadata = new ArrayList&lt;&gt;(metadata);</span>
+<span class="nc" id="L215">      return this;</span>
+    }
+
+    public Variable build() {
+<span class="nc" id="L219">      return new Variable(code, metadata);</span>
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
