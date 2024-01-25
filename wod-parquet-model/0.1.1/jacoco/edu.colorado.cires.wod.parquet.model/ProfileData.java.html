@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProfileData.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg.wod:wod-parquet-model</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.wod.parquet.model</a> &gt; <span class="el_source">ProfileData.java</span></div><h1>ProfileData.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.wod.parquet.model;
+
+import java.io.Serializable;
+import java.util.Objects;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
+
+public class ProfileData implements Serializable {
+
+  private static final long serialVersionUID = 0L;
+
+  public static StructType structType() {
+<span class="nc" id="L16">    return new StructType(new StructField[]{</span>
+<span class="nc" id="L17">        new StructField(&quot;variableCode&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L18">        new StructField(&quot;value&quot;, DataTypes.DoubleType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L19">        new StructField(&quot;qcFlag&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L20">        new StructField(&quot;originatorsFlag&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+    });
+  }
+
+  public Row asRow() {
+<span class="nc" id="L25">    return new GenericRowWithSchema(new Object[]{variableCode, value, qcFlag, originatorsFlag}, structType());</span>
+  }
+
+  private int variableCode;
+  private double value;
+  private int qcFlag;
+  private int originatorsFlag;
+
+  public static Builder builder() {
+<span class="nc" id="L34">    return new Builder();</span>
+  }
+
+  public static Builder builder(ProfileData source) {
+<span class="nc" id="L38">    return new Builder(source);</span>
+  }
+
+  public static Builder builder(Row row) {
+<span class="nc" id="L42">    return new Builder(row);</span>
+  }
+
+  @Deprecated
+<span class="nc" id="L46">  public ProfileData() {</span>
+
+<span class="nc" id="L48">  }</span>
+
+<span class="nc" id="L50">  private ProfileData(int variableCode, double value, int qcFlag, int originatorsFlag) {</span>
+<span class="nc" id="L51">    this.variableCode = variableCode;</span>
+<span class="nc" id="L52">    this.value = value;</span>
+<span class="nc" id="L53">    this.qcFlag = qcFlag;</span>
+<span class="nc" id="L54">    this.originatorsFlag = originatorsFlag;</span>
+<span class="nc" id="L55">  }</span>
+
+  public int getVariableCode() {
+<span class="nc" id="L58">    return variableCode;</span>
+  }
+
+  @Deprecated
+  public void setVariableCode(int variableCode) {
+<span class="nc" id="L63">    this.variableCode = variableCode;</span>
+<span class="nc" id="L64">  }</span>
+
+  public double getValue() {
+<span class="nc" id="L67">    return value;</span>
+  }
+
+  @Deprecated
+  public void setValue(double value) {
+<span class="nc" id="L72">    this.value = value;</span>
+<span class="nc" id="L73">  }</span>
+
+  public int getQcFlag() {
+<span class="nc" id="L76">    return qcFlag;</span>
+  }
+
+  @Deprecated
+  public void setQcFlag(int qcFlag) {
+<span class="nc" id="L81">    this.qcFlag = qcFlag;</span>
+<span class="nc" id="L82">  }</span>
+
+  public int getOriginatorsFlag() {
+<span class="nc" id="L85">    return originatorsFlag;</span>
+  }
+
+  @Deprecated
+  public void setOriginatorsFlag(int originatorsFlag) {
+<span class="nc" id="L90">    this.originatorsFlag = originatorsFlag;</span>
+<span class="nc" id="L91">  }</span>
+
+  @Override
+  public boolean equals(Object o) {
+<span class="nc bnc" id="L95" title="All 2 branches missed.">    if (this == o) {</span>
+<span class="nc" id="L96">      return true;</span>
+    }
+<span class="nc bnc" id="L98" title="All 4 branches missed.">    if (o == null || getClass() != o.getClass()) {</span>
+<span class="nc" id="L99">      return false;</span>
+    }
+<span class="nc" id="L101">    ProfileData that = (ProfileData) o;</span>
+<span class="nc bnc" id="L102" title="All 8 branches missed.">    return variableCode == that.variableCode &amp;&amp; Double.compare(that.value, value) == 0 &amp;&amp; qcFlag == that.qcFlag</span>
+        &amp;&amp; originatorsFlag == that.originatorsFlag;
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L108">    return Objects.hash(variableCode, value, qcFlag, originatorsFlag);</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L113">    return &quot;ProfileData{&quot; +</span>
+        &quot;variableCode=&quot; + variableCode +
+        &quot;, value=&quot; + value +
+        &quot;, qcFlag=&quot; + qcFlag +
+        &quot;, originatorsFlag=&quot; + originatorsFlag +
+        '}';
+  }
+
+  public static class Builder {
+
+    private int variableCode;
+    private double value;
+    private int qcFlag;
+    private int originatorsFlag;
+
+    private Builder() {
+
+    }
+
+<span class="nc" id="L132">    private Builder(ProfileData source) {</span>
+<span class="nc" id="L133">      variableCode = source.getVariableCode();</span>
+<span class="nc" id="L134">      value = source.getValue();</span>
+<span class="nc" id="L135">      qcFlag = source.getQcFlag();</span>
+<span class="nc" id="L136">      originatorsFlag = source.getOriginatorsFlag();</span>
+<span class="nc" id="L137">    }</span>
+
+<span class="nc" id="L139">    private Builder(Row row) {</span>
+<span class="nc" id="L140">      variableCode = row.getAs(&quot;variableCode&quot;);</span>
+<span class="nc" id="L141">      value = row.getAs(&quot;value&quot;);</span>
+<span class="nc" id="L142">      qcFlag = row.getAs(&quot;qcFlag&quot;);</span>
+<span class="nc" id="L143">      originatorsFlag = row.getAs(&quot;originatorsFlag&quot;);</span>
+<span class="nc" id="L144">    }</span>
+
+    public Builder withVariableCode(int variableCode) {
+<span class="nc" id="L147">      this.variableCode = variableCode;</span>
+<span class="nc" id="L148">      return this;</span>
+    }
+
+    public Builder withValue(double value) {
+<span class="nc" id="L152">      this.value = value;</span>
+<span class="nc" id="L153">      return this;</span>
+    }
+
+    public Builder withQcFlag(int qcFlag) {
+<span class="nc" id="L157">      this.qcFlag = qcFlag;</span>
+<span class="nc" id="L158">      return this;</span>
+    }
+
+    public Builder withOriginatorsFlag(int originatorsFlag) {
+<span class="nc" id="L162">      this.originatorsFlag = originatorsFlag;</span>
+<span class="nc" id="L163">      return this;</span>
+    }
+
+    public ProfileData build() {
+<span class="nc" id="L167">      return new ProfileData(variableCode, value, qcFlag, originatorsFlag);</span>
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

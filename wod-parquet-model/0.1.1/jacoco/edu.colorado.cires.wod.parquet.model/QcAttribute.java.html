@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QcAttribute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg.wod:wod-parquet-model</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.wod.parquet.model</a> &gt; <span class="el_source">QcAttribute.java</span></div><h1>QcAttribute.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.wod.parquet.model;
+
+import java.io.Serializable;
+import java.util.Objects;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
+
+public class QcAttribute implements Serializable {
+
+  private static final long serialVersionUID = 0L;
+
+  public static StructType structType() {
+<span class="nc" id="L16">    return new StructType(new StructField[]{</span>
+<span class="nc" id="L17">        new StructField(&quot;code&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L18">        new StructField(&quot;value&quot;, DataTypes.DoubleType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L19">        new StructField(&quot;qcFlag&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+<span class="nc" id="L20">        new StructField(&quot;originatorsFlag&quot;, DataTypes.IntegerType, false, org.apache.spark.sql.types.Metadata.empty()),</span>
+    });
+  }
+
+  public Row asRow() {
+<span class="nc" id="L25">    return new GenericRowWithSchema(new Object[]{code, value, qcFlag, originatorsFlag}, structType());</span>
+  }
+
+  private int code;
+  private double value;
+  private int qcFlag;
+  private int originatorsFlag;
+
+  public static Builder builder() {
+<span class="nc" id="L34">    return new Builder();</span>
+  }
+
+  public static Builder builder(QcAttribute source) {
+<span class="nc" id="L38">    return new Builder(source);</span>
+  }
+
+  public static Builder builder(Row row) {
+<span class="nc" id="L42">    return new Builder(row);</span>
+  }
+
+  @Deprecated
+<span class="nc" id="L46">  public QcAttribute() {</span>
+
+<span class="nc" id="L48">  }</span>
+
+<span class="nc" id="L50">  private QcAttribute(int code, double value, int qcFlag, int originatorsFlag) {</span>
+<span class="nc" id="L51">    this.code = code;</span>
+<span class="nc" id="L52">    this.value = value;</span>
+<span class="nc" id="L53">    this.qcFlag = qcFlag;</span>
+<span class="nc" id="L54">    this.originatorsFlag = originatorsFlag;</span>
+<span class="nc" id="L55">  }</span>
+
+  public int getCode() {
+<span class="nc" id="L58">    return code;</span>
+  }
+
+  @Deprecated
+  public void setCode(int code) {
+<span class="nc" id="L63">    this.code = code;</span>
+<span class="nc" id="L64">  }</span>
+
+  public double getValue() {
+<span class="nc" id="L67">    return value;</span>
+  }
+
+  @Deprecated
+  public void setValue(double value) {
+<span class="nc" id="L72">    this.value = value;</span>
+<span class="nc" id="L73">  }</span>
+
+  public int getQcFlag() {
+<span class="nc" id="L76">    return qcFlag;</span>
+  }
+
+  @Deprecated
+  public void setQcFlag(int qcFlag) {
+<span class="nc" id="L81">    this.qcFlag = qcFlag;</span>
+<span class="nc" id="L82">  }</span>
+
+  public int getOriginatorsFlag() {
+<span class="nc" id="L85">    return originatorsFlag;</span>
+  }
+
+  @Deprecated
+  public void setOriginatorsFlag(int originatorsFlag) {
+<span class="nc" id="L90">    this.originatorsFlag = originatorsFlag;</span>
+<span class="nc" id="L91">  }</span>
+
+  @Override
+  public boolean equals(Object o) {
+<span class="nc bnc" id="L95" title="All 2 branches missed.">    if (this == o) {</span>
+<span class="nc" id="L96">      return true;</span>
+    }
+<span class="nc bnc" id="L98" title="All 4 branches missed.">    if (o == null || getClass() != o.getClass()) {</span>
+<span class="nc" id="L99">      return false;</span>
+    }
+<span class="nc" id="L101">    QcAttribute that = (QcAttribute) o;</span>
+<span class="nc bnc" id="L102" title="All 8 branches missed.">    return code == that.code &amp;&amp; Double.compare(that.value, value) == 0 &amp;&amp; qcFlag == that.qcFlag &amp;&amp; originatorsFlag == that.originatorsFlag;</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L107">    return Objects.hash(code, value, qcFlag, originatorsFlag);</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L112">    return &quot;QcAttribute{&quot; +</span>
+        &quot;code=&quot; + code +
+        &quot;, value=&quot; + value +
+        &quot;, qcFlag=&quot; + qcFlag +
+        &quot;, originatorsFlag=&quot; + originatorsFlag +
+        '}';
+  }
+
+  public static class Builder {
+
+    private int code;
+    private double value;
+    private int qcFlag;
+    private int originatorsFlag;
+
+    private Builder() {
+
+    }
+
+<span class="nc" id="L131">    private Builder(QcAttribute source) {</span>
+<span class="nc" id="L132">      code = source.getCode();</span>
+<span class="nc" id="L133">      value = source.getValue();</span>
+<span class="nc" id="L134">      qcFlag = source.getQcFlag();</span>
+<span class="nc" id="L135">      originatorsFlag = source.getOriginatorsFlag();</span>
+<span class="nc" id="L136">    }</span>
+
+<span class="nc" id="L138">    private Builder(Row row) {</span>
+<span class="nc" id="L139">      code = row.getAs(&quot;code&quot;);</span>
+<span class="nc" id="L140">      value = row.getAs(&quot;value&quot;);</span>
+<span class="nc" id="L141">      qcFlag = row.getAs(&quot;qcFlag&quot;);</span>
+<span class="nc" id="L142">      originatorsFlag = row.getAs(&quot;originatorsFlag&quot;);</span>
+<span class="nc" id="L143">    }</span>
+
+
+    public Builder withCode(int code) {
+<span class="nc" id="L147">      this.code = code;</span>
+<span class="nc" id="L148">      return this;</span>
+    }
+
+    public Builder withValue(double value) {
+<span class="nc" id="L152">      this.value = value;</span>
+<span class="nc" id="L153">      return this;</span>
+    }
+
+    public Builder withQcFlag(int qcFlag) {
+<span class="nc" id="L157">      this.qcFlag = qcFlag;</span>
+<span class="nc" id="L158">      return this;</span>
+    }
+
+    public Builder withOriginatorsFlag(int originatorsFlag) {
+<span class="nc" id="L162">      this.originatorsFlag = originatorsFlag;</span>
+<span class="nc" id="L163">      return this;</span>
+    }
+
+    public QcAttribute build() {
+<span class="nc" id="L167">      return new QcAttribute(code, value, qcFlag, originatorsFlag);</span>
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
