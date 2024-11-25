@@ -1,0 +1,1 @@
+memberSearchIndex = [{"p":"edu.colorado.cires.wod.transformer.ascii2parquet","c":"WodAsciiParquetTransformer","l":"parquetFromAscii(Cast)","url":"parquetFromAscii(edu.colorado.cires.wod.ascii.model.Cast)"}]
