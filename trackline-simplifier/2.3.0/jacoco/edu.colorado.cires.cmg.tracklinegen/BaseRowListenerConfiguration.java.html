@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BaseRowListenerConfiguration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:trackline-simplifier</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.tracklinegen</a> &gt; <span class="el_source">BaseRowListenerConfiguration.java</span></div><h1>BaseRowListenerConfiguration.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.tracklinegen;
+
+import java.util.function.Predicate;
+import org.locationtech.jts.geom.GeometryFactory;
+
+public class BaseRowListenerConfiguration&lt;T extends DataRow&gt; {
+
+  private final long nmSplit;
+  private final long msSplit;
+  private final GeometrySimplifier geometrySimplifier;
+  private final Predicate&lt;T&gt; filterRow;
+  private final GeoJsonMultiLineWriter lineWriter;
+  private final int batchSize;
+  private final long maxAllowedSimplifiedPoints;
+  private final double maxAllowedSpeedKnts;
+  private final GeometryFactory geometryFactory;
+  private final int geoJsonPrecision;
+
+<span class="fc" id="L19">  private BaseRowListenerConfiguration(Builder&lt;T&gt; builder) {</span>
+
+<span class="fc" id="L21">    nmSplit = builder.nmSplit;</span>
+<span class="fc" id="L22">    msSplit = builder.msSplit;</span>
+<span class="fc" id="L23">    geometrySimplifier = builder.geometrySimplifier;</span>
+<span class="fc" id="L24">    filterRow = builder.filterRow;</span>
+<span class="fc" id="L25">    lineWriter = builder.lineWriter;</span>
+<span class="fc" id="L26">    batchSize = builder.batchSize;</span>
+<span class="fc" id="L27">    maxAllowedSimplifiedPoints = builder.maxAllowedSimplifiedPoints;</span>
+<span class="fc" id="L28">    maxAllowedSpeedKnts = builder.maxAllowedSpeedKnts;</span>
+<span class="fc" id="L29">    geometryFactory = builder.geometryFactory;</span>
+<span class="fc" id="L30">    geoJsonPrecision = builder.geoJsonPrecision;</span>
+
+<span class="fc" id="L32">  }</span>
+
+  public long getNmSplit() {
+<span class="fc" id="L35">    return nmSplit;</span>
+  }
+
+  public long getMsSplit() {
+<span class="fc" id="L39">    return msSplit;</span>
+  }
+
+  public GeometrySimplifier getGeometrySimplifier() {
+<span class="fc" id="L43">    return geometrySimplifier;</span>
+  }
+
+  public Predicate&lt;T&gt; getFilterRow() {
+<span class="fc" id="L47">    return filterRow;</span>
+  }
+
+  public GeoJsonMultiLineWriter getLineWriter() {
+<span class="fc" id="L51">    return lineWriter;</span>
+  }
+
+  public int getBatchSize() {
+<span class="fc" id="L55">    return batchSize;</span>
+  }
+
+  public long getMaxAllowedSimplifiedPoints() {
+<span class="fc" id="L59">    return maxAllowedSimplifiedPoints;</span>
+  }
+
+  public double getMaxAllowedSpeedKnts() {
+<span class="fc" id="L63">    return maxAllowedSpeedKnts;</span>
+  }
+
+  public GeometryFactory getGeometryFactory() {
+<span class="fc" id="L67">    return geometryFactory;</span>
+  }
+
+  public int getGeoJsonPrecision() {
+<span class="fc" id="L71">    return geoJsonPrecision;</span>
+  }
+
+  public static &lt;T extends DataRow&gt; Builder&lt;T&gt; configure() {
+<span class="fc" id="L75">    return new Builder&lt;&gt;();</span>
+  }
+
+  public static &lt;T extends DataRow&gt; Builder&lt;T&gt; configure(BaseRowListenerConfiguration&lt;T&gt; properties) {
+<span class="nc" id="L79">    return new Builder&lt;&gt;(properties);</span>
+  }
+
+  public static class Builder&lt;T extends DataRow&gt; {
+
+    private long nmSplit;
+    private long msSplit;
+    private GeometrySimplifier geometrySimplifier;
+    private Predicate&lt;T&gt; filterRow;
+    private GeoJsonMultiLineWriter lineWriter;
+    private int batchSize;
+    private long maxAllowedSimplifiedPoints;
+    private double maxAllowedSpeedKnts;
+    private GeometryFactory geometryFactory;
+    private int geoJsonPrecision;
+
+    private Builder() {
+
+    }
+
+<span class="nc" id="L99">    private Builder(BaseRowListenerConfiguration&lt;T&gt; properties) {</span>
+<span class="nc" id="L100">      nmSplit = properties.nmSplit;</span>
+<span class="nc" id="L101">      msSplit = properties.msSplit;</span>
+<span class="nc" id="L102">      geometrySimplifier = properties.geometrySimplifier;</span>
+<span class="nc" id="L103">      filterRow = properties.filterRow;</span>
+<span class="nc" id="L104">      lineWriter = properties.lineWriter;</span>
+<span class="nc" id="L105">      batchSize = properties.batchSize;</span>
+<span class="nc" id="L106">      maxAllowedSimplifiedPoints = properties.maxAllowedSimplifiedPoints;</span>
+<span class="nc" id="L107">      maxAllowedSpeedKnts = properties.maxAllowedSpeedKnts;</span>
+<span class="nc" id="L108">      geometryFactory = properties.geometryFactory;</span>
+<span class="nc" id="L109">      geoJsonPrecision = properties.geoJsonPrecision;</span>
+<span class="nc" id="L110">    }</span>
+
+    public Builder&lt;T&gt; withNmSplit(Long nmSplit) {
+<span class="fc" id="L113">      this.nmSplit = nmSplit;</span>
+<span class="fc" id="L114">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withMsSplit(Long msSplit) {
+<span class="fc" id="L118">      this.msSplit = msSplit;</span>
+<span class="fc" id="L119">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withGeometrySimplifier(GeometrySimplifier geometrySimplifier) {
+<span class="fc" id="L123">      this.geometrySimplifier = geometrySimplifier;</span>
+<span class="fc" id="L124">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withFilterRow(Predicate&lt;T&gt; filterRow) {
+<span class="fc" id="L128">      this.filterRow = filterRow;</span>
+<span class="fc" id="L129">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withLineWriter(GeoJsonMultiLineWriter lineWriter) {
+<span class="fc" id="L133">      this.lineWriter = lineWriter;</span>
+<span class="fc" id="L134">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withBatchSize(Integer batchSize) {
+<span class="fc" id="L138">      this.batchSize = batchSize;</span>
+
+<span class="fc" id="L140">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withMaxAllowedSimplifiedPoints(Long maxAllowedSimplifiedPoints) {
+<span class="fc" id="L144">      this.maxAllowedSimplifiedPoints = maxAllowedSimplifiedPoints;</span>
+
+<span class="fc" id="L146">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withMaxAllowedSpeedKnts(Double maxAllowedSpeedKnts) {
+<span class="fc" id="L150">      this.maxAllowedSpeedKnts = maxAllowedSpeedKnts;</span>
+<span class="fc" id="L151">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withGeometryFactory(GeometryFactory geometryFactory) {
+<span class="fc" id="L155">      this.geometryFactory = geometryFactory;</span>
+<span class="fc" id="L156">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withGeoJsonPrecision(int geoJsonPrecision) {
+<span class="fc" id="L160">      this.geoJsonPrecision = geoJsonPrecision;</span>
+<span class="fc" id="L161">      return this;</span>
+    }
+
+    public BaseRowListenerConfiguration&lt;T&gt; build() {
+<span class="fc" id="L165">      return new BaseRowListenerConfiguration&lt;&gt;(this);</span>
+    }
+  }
+}
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
