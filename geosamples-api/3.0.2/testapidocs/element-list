@@ -1,0 +1,4 @@
+gov.noaa.ncei.geosamples.api
+gov.noaa.ncei.geosamples.api.controller
+gov.noaa.ncei.geosamples.api.service
+gov.noaa.ncei.geosamples.api.service.sample

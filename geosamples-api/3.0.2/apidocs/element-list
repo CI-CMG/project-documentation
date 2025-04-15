@@ -1,0 +1,12 @@
+gov.noaa.ncei.geosamples.api
+gov.noaa.ncei.geosamples.api.controller
+gov.noaa.ncei.geosamples.api.error
+gov.noaa.ncei.geosamples.api.model
+gov.noaa.ncei.geosamples.api.repository
+gov.noaa.ncei.geosamples.api.service
+gov.noaa.ncei.geosamples.api.service.cruise
+gov.noaa.ncei.geosamples.api.service.csv
+gov.noaa.ncei.geosamples.api.service.facility
+gov.noaa.ncei.geosamples.api.service.interval
+gov.noaa.ncei.geosamples.api.service.sample
+gov.noaa.ncei.geosamples.api.view
