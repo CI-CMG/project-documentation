@@ -1,0 +1,17 @@
+gov.noaa.ncei.mgg.errorhandler
+gov.noaa.ncei.mgg.geosamples.ingest
+gov.noaa.ncei.mgg.geosamples.ingest.api.controller
+gov.noaa.ncei.mgg.geosamples.ingest.api.controller.provider
+gov.noaa.ncei.mgg.geosamples.ingest.api.error
+gov.noaa.ncei.mgg.geosamples.ingest.api.model
+gov.noaa.ncei.mgg.geosamples.ingest.api.model.paging
+gov.noaa.ncei.mgg.geosamples.ingest.api.model.validation
+gov.noaa.ncei.mgg.geosamples.ingest.api.security
+gov.noaa.ncei.mgg.geosamples.ingest.config
+gov.noaa.ncei.mgg.geosamples.ingest.jpa
+gov.noaa.ncei.mgg.geosamples.ingest.jpa.repository
+gov.noaa.ncei.mgg.geosamples.ingest.service
+gov.noaa.ncei.mgg.geosamples.ingest.service.model
+gov.noaa.ncei.mgg.geosamples.ingest.service.model.validation
+gov.noaa.ncei.mgg.geosamples.ingest.service.provider
+gov.noaa.ncei.mgg.geosamples.ingest.swagger

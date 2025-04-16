@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","url":"allpackages-index.html"},{"l":"gov.noaa.ncei.mgg.geosamples.ingest"},{"l":"gov.noaa.ncei.mgg.geosamples.ingest.api.controller"},{"l":"gov.noaa.ncei.mgg.geosamples.ingest.api.controller.provider"},{"l":"gov.noaa.ncei.mgg.geosamples.ingest.service"},{"l":"gov.noaa.ncei.mgg.geosamples.ingest.service.provider"}]

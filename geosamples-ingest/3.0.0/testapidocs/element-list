@@ -1,0 +1,5 @@
+gov.noaa.ncei.mgg.geosamples.ingest
+gov.noaa.ncei.mgg.geosamples.ingest.api.controller
+gov.noaa.ncei.mgg.geosamples.ingest.api.controller.provider
+gov.noaa.ncei.mgg.geosamples.ingest.service
+gov.noaa.ncei.mgg.geosamples.ingest.service.provider
