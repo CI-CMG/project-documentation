@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>H3JTSConverterImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:h3-geometry-generator</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.geometry_generator.h3</a> &gt; <span class="el_source">H3JTSConverterImpl.java</span></div><h1>H3JTSConverterImpl.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.geometry_generator.h3;
+
+import com.uber.h3core.H3Core;
+import com.uber.h3core.util.GeoCoord;
+import java.util.List;
+import java.util.function.Function;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LinearRing;
+import org.locationtech.jts.geom.MultiPolygon;
+import org.locationtech.jts.geom.Polygon;
+
+/**
+ * Default implementation of {@link H3JTSConverter}
+ */
+class H3JTSConverterImpl implements H3JTSConverter {
+
+  private final int resolution;
+  private final H3Core h3Core;
+  private final GeometryFactory geometryFactory;
+
+  /**
+   * Creates a {@link H3JTSConverterImpl}
+   * @param h3Core {@link H3Core} for generating / analyzing H3 cells
+   * @param resolution H3 resolution assumed by resulting converter (0-15)
+   * @param geometryFactory {@link Function} for creating a {@link Polygon} from an array of {@link Coordinate}
+   */
+<span class="fc" id="L29">  H3JTSConverterImpl(int resolution, H3Core h3Core, GeometryFactory geometryFactory) {</span>
+<span class="fc" id="L30">    this.resolution = resolution;</span>
+<span class="fc" id="L31">    this.h3Core = h3Core;</span>
+<span class="fc" id="L32">    this.geometryFactory = geometryFactory;</span>
+<span class="fc" id="L33">  }</span>
+
+  /**
+   * Converts a JTS {@link Coordinate} to an H3 cell
+   * @param coordinate {@link Coordinate} to convert
+   * @return H3 cell
+   */
+  @Override
+  public long coordinateToCell(Coordinate coordinate) {
+<span class="fc" id="L42">    return h3Core.geoToH3(coordinate.getY(), coordinate.getX(), resolution);</span>
+  }
+
+  /**
+   * Converts a list of H3 cells to a JTS {@link MultiPolygon}
+   * @param cells list of H3 cells
+   * @return {@link MultiPolygon} representing the union of H3 cell hexagons from the input cell list
+   */
+  @Override
+  public Geometry cellsToMultiPolygon(List&lt;Long&gt; cells) {
+<span class="fc" id="L52">    return geometryFactory.createMultiPolygon(</span>
+<span class="fc" id="L53">      h3Core.h3SetToMultiPolygon(cells, true).stream()</span>
+<span class="fc" id="L54">        .map(polygonCoordinates -&gt; geometryFactory.createPolygon(</span>
+<span class="fc" id="L55">          geometryFactory.createLinearRing(</span>
+<span class="fc" id="L56">            polygonCoordinates.get(0).stream()</span>
+<span class="fc" id="L57">              .map(this::coordinateFromGeoCoord)</span>
+<span class="fc" id="L58">              .toArray(Coordinate[]::new)</span>
+          ),
+<span class="fc bfc" id="L60" title="All 2 branches covered.">          polygonCoordinates.size() == 1 ? new LinearRing[0] : polygonCoordinates.subList(1, polygonCoordinates.size()).stream()</span>
+<span class="fc" id="L61">            .map(geoCoords -&gt; geometryFactory.createLinearRing(geoCoords.stream().map(this::coordinateFromGeoCoord).toArray(Coordinate[]::new)))</span>
+<span class="fc" id="L62">            .toArray(LinearRing[]::new)</span>
+<span class="fc" id="L63">        )).toArray(Polygon[]::new)</span>
+    );
+  }
+
+  private Coordinate coordinateFromGeoCoord(GeoCoord geoCoord) {
+<span class="fc" id="L68">    return new Coordinate(geoCoord.lng, geoCoord.lat);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

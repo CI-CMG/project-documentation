@@ -1,0 +1,5 @@
+edu.colorado.cires.cmg.geometry_generator
+edu.colorado.cires.cmg.geometry_generator.collector
+edu.colorado.cires.cmg.geometry_generator.h3
+edu.colorado.cires.cmg.geometry_generator.reader.csv
+edu.colorado.cires.cmg.geometry_generator.reader.tif

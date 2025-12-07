@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GeometryGenerator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:h3-geometry-generator</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.geometry_generator</a> &gt; <span class="el_source">GeometryGenerator.java</span></div><h1>GeometryGenerator.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.geometry_generator;
+
+import edu.colorado.cires.cmg.geometry_generator.collector.CellCollector;
+import edu.colorado.cires.cmg.geometry_generator.h3.H3JTSConverter;
+import java.io.IOException;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+import org.apache.commons.lang3.function.FailableFunction;
+import org.apache.commons.lang3.function.FailableSupplier;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+
+/**
+ * Reads coordinates from a data source, bins them into H3 cells, and collects H3 indices into a MultiPolygon
+ */
+public class GeometryGenerator {
+  private final H3JTSConverter h3JTSConverter;
+  private final Supplier&lt;CellCollector&gt; cellCollectorSupplier;
+
+  /**
+   * Creates a {@link GeometryGenerator}
+   * @param h3JTSConverter {@link H3JTSConverter} for converting between H3 outputs and JTS outputs
+   * @param cellCollectorSupplier {@link Supplier&lt;CellCollector&gt;} for collecting H3 cells into a MultiPolygon
+   */
+<span class="fc" id="L25">  public GeometryGenerator(H3JTSConverter h3JTSConverter, Supplier&lt;CellCollector&gt; cellCollectorSupplier) {</span>
+<span class="fc" id="L26">    this.h3JTSConverter = h3JTSConverter;</span>
+<span class="fc" id="L27">    this.cellCollectorSupplier = cellCollectorSupplier;</span>
+<span class="fc" id="L28">  }</span>
+
+  /**
+   * Performs the following workflow:
+   * 1. Reads coordinates from a source
+   * 2. Converts coordinates to H3 indices
+   * 3. Collects H3 indices into a MultiPolygon
+   * @param coordinateStream {@link Stream&lt;Coordinate&gt;} containing coordinates
+   * @return {@link Geometry} containing coordinates from source
+   */
+  public Geometry generate(Stream&lt;Coordinate&gt; coordinateStream) {
+<span class="fc" id="L39">    return coordinateStream</span>
+<span class="fc" id="L40">      .map(h3JTSConverter::coordinateToCell)</span>
+<span class="fc" id="L41">      .distinct()</span>
+<span class="fc" id="L42">      .collect(cellCollectorSupplier.get());</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

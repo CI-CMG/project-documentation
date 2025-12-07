@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CellCollector.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:h3-geometry-generator</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.geometry_generator.collector</a> &gt; <span class="el_source">CellCollector.java</span></div><h1>CellCollector.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.geometry_generator.collector;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collector;
+import org.locationtech.jts.geom.Geometry;
+
+/**
+ * Collects H3 cells into a JTS geometry
+ */
+public class CellCollector implements Collector&lt;Long, List&lt;Long&gt;, Geometry&gt; {
+
+  private final Function&lt;List&lt;Long&gt;, Geometry&gt; cellConverter;
+
+  /**
+   * Creates a {@link CellCollector}
+   * @param cellConverter for transforming a list of H3 cells to a JTS geometry
+   */
+<span class="fc" id="L24">  public CellCollector(Function&lt;List&lt;Long&gt;, Geometry&gt; cellConverter) {</span>
+<span class="fc" id="L25">    this.cellConverter = cellConverter;</span>
+<span class="fc" id="L26">  }</span>
+
+  /**
+   * Initializes list of H3 cells
+   * @return {@link Supplier} of H3 cells list
+   */
+  @Override
+  public Supplier&lt;List&lt;Long&gt;&gt; supplier() {
+<span class="fc" id="L34">    return ArrayList::new;</span>
+  }
+
+  /**
+   * Adds H3 cell to list
+   * @return {@link BiConsumer} for adding H3 cells to list
+   */
+  @Override
+  public BiConsumer&lt;List&lt;Long&gt;, Long&gt; accumulator() {
+<span class="fc" id="L43">    return List::add;</span>
+  }
+
+  /**
+   * Merges 2 incomplete list of H3 cells
+   * @return {@link BinaryOperator} that combines 2 incomplete list of H3 cells
+   */
+  @Override
+  public BinaryOperator&lt;List&lt;Long&gt;&gt; combiner() {
+<span class="fc" id="L52">    return (cells1, cells2) -&gt; {</span>
+<span class="nc" id="L53">      cells1.addAll(cells2);</span>
+<span class="nc" id="L54">      return cells1;</span>
+    };
+  }
+
+  /**
+   * Transforms list of H3 cells to JTS geometry
+   * @return {@link Function} for transforming list of H3 cells to JTS geometry
+   */
+  @Override
+  public Function&lt;List&lt;Long&gt;, Geometry&gt; finisher() {
+<span class="fc" id="L64">    return cellConverter;</span>
+  }
+
+  @Override
+  public Set&lt;Characteristics&gt; characteristics() {
+<span class="fc" id="L69">    return Set.of();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

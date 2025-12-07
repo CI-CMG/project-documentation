@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GeoTiffCoordinateReader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:h3-geometry-generator</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.geometry_generator.reader.tif</a> &gt; <span class="el_source">GeoTiffCoordinateReader.java</span></div><h1>GeoTiffCoordinateReader.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.geometry_generator.reader.tif;
+
+import java.awt.image.Raster;
+import java.awt.image.RenderedImage;
+import java.io.IOException;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.TransformException;
+import org.geotools.coverage.grid.GridCoverage2D;
+import org.geotools.geometry.Position2D;
+import org.locationtech.jts.geom.Coordinate;
+
+/**
+ * Reads coordinates from tif files
+ * NOTE: it is assumed that tif files processed by this class have metadata pertaining to the geographic location of image contents
+ */
+<span class="nc" id="L18">public final class GeoTiffCoordinateReader {</span>
+
+  /**
+   * Creates a {@link Stream&lt;Coordinate&gt;} from a {@link CloseableGeotiffReader}
+   * @param reader {@link CloseableGeotiffReader} containing tif contents
+   * @return {@link Stream&lt;Coordinate&gt;} containing coordinates from tif file
+   * @throws IOException if tif file cannot be read
+   */
+  public static Stream&lt;Coordinate&gt; read(CloseableGeotiffReader reader) throws IOException {
+<span class="fc" id="L27">    GridCoverage2D coverage2D = reader.read(null);</span>
+
+<span class="fc" id="L29">    return getTileStream(coverage2D.getRenderedImage())</span>
+<span class="fc" id="L30">      .flatMap(GeoTiffCoordinateReader::processRaster)</span>
+<span class="fc" id="L31">      .filter(GeoTiffCoordinateReader::filterPixel)</span>
+<span class="fc" id="L32">      .map(pixelValue -&gt; pixelToCoordinate(pixelValue, coverage2D.getGridGeometry().getGridToCRS()));</span>
+  }
+
+  /**
+   * Transforms a tif pixel to a {@link Coordinate}
+   * @param pixelValue {@link PixelValue} containing x / y pixel location
+   * @param mathTransform {@link MathTransform} for converting x / y pixel locations to longitude / latitude
+   * @return {@link Coordinate} representing the input pixel
+   * @throws RuntimeException if {@link MathTransform} fails to convert pixel location to a coordinate
+   */
+  private static Coordinate pixelToCoordinate(PixelValue pixelValue, MathTransform mathTransform) {
+    try {
+<span class="fc" id="L44">      double[] coordinate = mathTransform.transform(new Position2D(pixelValue.x, pixelValue.y), null).getCoordinate();</span>
+<span class="fc" id="L45">      return new Coordinate(coordinate[0], coordinate[1]);</span>
+<span class="nc" id="L46">    } catch (TransformException e) {</span>
+<span class="nc" id="L47">      throw new RuntimeException(e);</span>
+    }
+  }
+
+  /**
+   * Filter determining which pixels are returned in this class' output {@link Stream&lt;Coordinate&gt;}
+   * @param pixelValue {@link PixelValue} containing a numeric RGB value
+   * @return whether this pixel will be included in this class' output {@link Stream&lt;Coordinate&gt;}
+   */
+  private static boolean filterPixel(PixelValue pixelValue) {
+<span class="fc" id="L57">    double value = pixelValue.values[0];</span>
+<span class="fc bfc" id="L58" title="All 4 branches covered.">    return  value != 255 &amp;&amp; value != 0;</span>
+  }
+
+  /**
+   * Creates a {@link Stream&lt;RasterValue&gt;} for iterating through tif tiles
+   * @param renderedImage {@link RenderedImage} containing tiles and tile metadata
+   * @return {@link Stream&lt;RasterValue&gt;} of tif tiles
+   */
+  private static Stream&lt;RasterValue&gt; getTileStream(RenderedImage renderedImage) {
+<span class="fc" id="L67">    return IntStream.range(0, renderedImage.getNumXTiles())</span>
+<span class="fc" id="L68">      .boxed()</span>
+<span class="fc" id="L69">      .flatMap(x -&gt;</span>
+<span class="fc" id="L70">        IntStream.range(0, renderedImage.getNumYTiles())</span>
+<span class="fc" id="L71">          .boxed()</span>
+<span class="fc" id="L72">          .map(y -&gt; new RasterValue(x, y, renderedImage.getTile(x, y)))</span>
+      );
+  }
+
+  /**
+   * Creates a {@link Stream&lt;PixelValue&gt;} from a tif tile
+   * @param rasterValue {@link RasterValue} representing tif tile
+   * @return {@link Stream&lt;PixelValue&gt;} of pixels read from tif tile
+   */
+  private static Stream&lt;PixelValue&gt; processRaster(RasterValue rasterValue) {
+<span class="fc" id="L82">    Raster raster = rasterValue.raster;</span>
+<span class="fc" id="L83">    int offsetX = rasterValue.x;</span>
+<span class="fc" id="L84">    int offsetY = rasterValue.y;</span>
+
+<span class="fc" id="L86">    return IntStream.range(0, raster.getWidth())</span>
+<span class="fc" id="L87">      .boxed()</span>
+<span class="fc" id="L88">      .flatMap(x -&gt;</span>
+<span class="fc" id="L89">        IntStream.range(0, raster.getHeight())</span>
+<span class="fc" id="L90">          .boxed()</span>
+<span class="fc" id="L91">          .map(y -&gt; new PixelValue(x + offsetX, y + offsetY, raster.getPixel(x + offsetX, y + offsetY, (double[]) null)))</span>
+      );
+  }
+
+  /**
+   * Helper class representing a pixel's x / y location and its values across bands
+   */
+  private static class PixelValue {
+    private final int x;
+    private final int y;
+    private final double[] values;
+
+    /**
+     * Creates a {@link PixelValue}
+     * @param x pixel x location
+     * @param y pixel y location
+     * @param values RGB values for each band within tif image
+     */
+<span class="fc" id="L109">    private PixelValue(int x, int y, double[] values) {</span>
+<span class="fc" id="L110">      this.x = x;</span>
+<span class="fc" id="L111">      this.y = y;</span>
+<span class="fc" id="L112">      this.values = values;</span>
+<span class="fc" id="L113">    }</span>
+  }
+
+  /**
+   * Helper class representing a tile's x / y location and its corresponding raster image
+   */
+  private static class RasterValue {
+    private final int x;
+    private final int y;
+    private final Raster raster;
+
+    /**
+     * Creates a {@link RasterValue}
+     * @param x tile x location
+     * @param y tile y location
+     * @param raster tile's {@link Raster} image
+     */
+<span class="fc" id="L130">    private RasterValue(int x, int y, Raster raster) {</span>
+<span class="fc" id="L131">      this.x = x;</span>
+<span class="fc" id="L132">      this.y = y;</span>
+<span class="fc" id="L133">      this.raster = raster;</span>
+<span class="fc" id="L134">    }</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

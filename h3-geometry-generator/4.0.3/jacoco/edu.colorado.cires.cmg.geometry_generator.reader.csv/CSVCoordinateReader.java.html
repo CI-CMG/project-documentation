@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CSVCoordinateReader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:h3-geometry-generator</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.geometry_generator.reader.csv</a> &gt; <span class="el_source">CSVCoordinateReader.java</span></div><h1>CSVCoordinateReader.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.geometry_generator.reader.csv;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.lang3.function.FailableFunction;
+import org.locationtech.jts.geom.Coordinate;
+
+/**
+ * Reads coordinates from csv files
+ */
+public class CSVCoordinateReader {
+
+  private final Function&lt;CSVRecord, String&gt; longitudeResolver;
+  private final Function&lt;CSVRecord, String&gt; latitudeResolver;
+  private final char delimiter;
+
+  /**
+   * Creates a {@link CSVCoordinateReader}
+   * @param longitudeResolver header name for longitude values
+   * @param latitudeResolver header name for latitude values
+   * @param delimiter csv delimiter
+   */
+<span class="fc" id="L27">  public CSVCoordinateReader(Function&lt;CSVRecord, String&gt; longitudeResolver, Function&lt;CSVRecord, String&gt; latitudeResolver, char delimiter) {</span>
+<span class="fc" id="L28">    this.longitudeResolver = longitudeResolver;</span>
+<span class="fc" id="L29">    this.latitudeResolver = latitudeResolver;</span>
+<span class="fc" id="L30">    this.delimiter = delimiter;</span>
+<span class="fc" id="L31">  }</span>
+
+  /**
+   * Creates a {@link Stream&lt;Coordinate&gt;} from a{@link Reader}
+   * @param reader csv {@link Reader}
+   * @return {@link Stream&lt;Coordinate&gt;} containing coordinates from csv file
+   * @throws IOException if csv file cannot be read
+   */
+  public Stream&lt;Coordinate&gt; read(Reader reader) throws IOException {
+<span class="fc" id="L40">    CSVFormat format = CSVFormat.DEFAULT.builder()</span>
+<span class="fc" id="L41">      .setHeader()</span>
+<span class="fc" id="L42">      .setSkipHeaderRecord(true)</span>
+<span class="fc" id="L43">      .setDelimiter(delimiter)</span>
+<span class="fc" id="L44">      .build();</span>
+
+<span class="fc" id="L46">    return format.parse(reader).stream()</span>
+<span class="fc" id="L47">      .map(record -&gt; new Coordinate(</span>
+<span class="fc" id="L48">        Double.parseDouble(longitudeResolver.apply(record)),</span>
+<span class="fc" id="L49">        Double.parseDouble(latitudeResolver.apply(record))</span>
+      ));
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
