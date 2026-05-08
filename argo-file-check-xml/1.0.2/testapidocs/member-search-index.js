@@ -1,0 +1,1 @@
+memberSearchIndex = [{"p":"edu.colorado.cires.argonaut.xml.filecheck","c":"ArgoFileTest","l":"ArgoFileTest()","u":"%3Cinit%3E()"},{"p":"edu.colorado.cires.argonaut.xml.filecheck","c":"ArgoFileTest","l":"testSimpleRead()"},{"p":"edu.colorado.cires.argonaut.xml.filecheck","c":"ArgoFileTest","l":"testWrite()"}];updateSearchResults();
