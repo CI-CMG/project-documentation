@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BaseRowListenerConfiguration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">io.github.ci-cmg:trackline-simplifier</a> &gt; <a href="index.source.html" class="el_package">edu.colorado.cires.cmg.tracklinegen</a> &gt; <span class="el_source">BaseRowListenerConfiguration.java</span></div><h1>BaseRowListenerConfiguration.java</h1><pre class="source lang-java linenums">package edu.colorado.cires.cmg.tracklinegen;
+
+import java.util.function.Predicate;
+import org.locationtech.jts.geom.GeometryFactory;
+
+public class BaseRowListenerConfiguration&lt;T extends DataRow&gt; {
+
+  private final long nmSplit;
+  private final long msSplit;
+  private final GeometrySimplifier geometrySimplifier;
+  private final Predicate&lt;T&gt; filterRow;
+  private final GeoJsonMultiLineWriter lineWriter;
+  private final int batchSize;
+  private final long maxAllowedSimplifiedPoints;
+  private final double maxAllowedSpeedKnts;
+  private final GeometryFactory geometryFactory;
+  private final int geoJsonPrecision;
+  private final boolean retainPoints;
+
+<span class="fc" id="L20">  private BaseRowListenerConfiguration(Builder&lt;T&gt; builder) {</span>
+
+<span class="fc" id="L22">    nmSplit = builder.nmSplit;</span>
+<span class="fc" id="L23">    msSplit = builder.msSplit;</span>
+<span class="fc" id="L24">    geometrySimplifier = builder.geometrySimplifier;</span>
+<span class="fc" id="L25">    filterRow = builder.filterRow;</span>
+<span class="fc" id="L26">    lineWriter = builder.lineWriter;</span>
+<span class="fc" id="L27">    batchSize = builder.batchSize;</span>
+<span class="fc" id="L28">    maxAllowedSimplifiedPoints = builder.maxAllowedSimplifiedPoints;</span>
+<span class="fc" id="L29">    maxAllowedSpeedKnts = builder.maxAllowedSpeedKnts;</span>
+<span class="fc" id="L30">    geometryFactory = builder.geometryFactory;</span>
+<span class="fc" id="L31">    geoJsonPrecision = builder.geoJsonPrecision;</span>
+<span class="fc" id="L32">    retainPoints = builder.retainPoints;</span>
+<span class="fc" id="L33">  }</span>
+
+  public long getNmSplit() {
+<span class="fc" id="L36">    return nmSplit;</span>
+  }
+
+  public long getMsSplit() {
+<span class="fc" id="L40">    return msSplit;</span>
+  }
+
+  public GeometrySimplifier getGeometrySimplifier() {
+<span class="fc" id="L44">    return geometrySimplifier;</span>
+  }
+
+  public Predicate&lt;T&gt; getFilterRow() {
+<span class="fc" id="L48">    return filterRow;</span>
+  }
+
+  public GeoJsonMultiLineWriter getLineWriter() {
+<span class="fc" id="L52">    return lineWriter;</span>
+  }
+
+  public int getBatchSize() {
+<span class="fc" id="L56">    return batchSize;</span>
+  }
+
+  public long getMaxAllowedSimplifiedPoints() {
+<span class="fc" id="L60">    return maxAllowedSimplifiedPoints;</span>
+  }
+
+  public double getMaxAllowedSpeedKnts() {
+<span class="fc" id="L64">    return maxAllowedSpeedKnts;</span>
+  }
+
+  public GeometryFactory getGeometryFactory() {
+<span class="fc" id="L68">    return geometryFactory;</span>
+  }
+
+  public int getGeoJsonPrecision() {
+<span class="fc" id="L72">    return geoJsonPrecision;</span>
+  }
+
+  public boolean isRetainPoints() {
+<span class="fc" id="L76">    return retainPoints;</span>
+  }
+
+  public static &lt;T extends DataRow&gt; Builder&lt;T&gt; configure() {
+<span class="fc" id="L80">    return new Builder&lt;&gt;();</span>
+  }
+
+  public static &lt;T extends DataRow&gt; Builder&lt;T&gt; configure(BaseRowListenerConfiguration&lt;T&gt; properties) {
+<span class="nc" id="L84">    return new Builder&lt;&gt;(properties);</span>
+  }
+
+  public static class Builder&lt;T extends DataRow&gt; {
+
+    private long nmSplit;
+    private long msSplit;
+    private GeometrySimplifier geometrySimplifier;
+    private Predicate&lt;T&gt; filterRow;
+    private GeoJsonMultiLineWriter lineWriter;
+    private int batchSize;
+    private long maxAllowedSimplifiedPoints;
+    private double maxAllowedSpeedKnts;
+    private GeometryFactory geometryFactory;
+    private int geoJsonPrecision;
+<span class="pc" id="L99">    private boolean retainPoints = false;</span>
+
+<span class="fc" id="L101">    private Builder() {</span>
+
+<span class="fc" id="L103">    }</span>
+
+<span class="nc" id="L105">    private Builder(BaseRowListenerConfiguration&lt;T&gt; properties) {</span>
+<span class="nc" id="L106">      nmSplit = properties.nmSplit;</span>
+<span class="nc" id="L107">      msSplit = properties.msSplit;</span>
+<span class="nc" id="L108">      geometrySimplifier = properties.geometrySimplifier;</span>
+<span class="nc" id="L109">      filterRow = properties.filterRow;</span>
+<span class="nc" id="L110">      lineWriter = properties.lineWriter;</span>
+<span class="nc" id="L111">      batchSize = properties.batchSize;</span>
+<span class="nc" id="L112">      maxAllowedSimplifiedPoints = properties.maxAllowedSimplifiedPoints;</span>
+<span class="nc" id="L113">      maxAllowedSpeedKnts = properties.maxAllowedSpeedKnts;</span>
+<span class="nc" id="L114">      geometryFactory = properties.geometryFactory;</span>
+<span class="nc" id="L115">      geoJsonPrecision = properties.geoJsonPrecision;</span>
+<span class="nc" id="L116">      retainPoints = properties.retainPoints;</span>
+<span class="nc" id="L117">    }</span>
+
+    public Builder&lt;T&gt; withNmSplit(Long nmSplit) {
+<span class="fc" id="L120">      this.nmSplit = nmSplit;</span>
+<span class="fc" id="L121">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withMsSplit(Long msSplit) {
+<span class="fc" id="L125">      this.msSplit = msSplit;</span>
+<span class="fc" id="L126">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withGeometrySimplifier(GeometrySimplifier geometrySimplifier) {
+<span class="fc" id="L130">      this.geometrySimplifier = geometrySimplifier;</span>
+<span class="fc" id="L131">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withFilterRow(Predicate&lt;T&gt; filterRow) {
+<span class="fc" id="L135">      this.filterRow = filterRow;</span>
+<span class="fc" id="L136">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withLineWriter(GeoJsonMultiLineWriter lineWriter) {
+<span class="fc" id="L140">      this.lineWriter = lineWriter;</span>
+<span class="fc" id="L141">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withBatchSize(Integer batchSize) {
+<span class="fc" id="L145">      this.batchSize = batchSize;</span>
+
+<span class="fc" id="L147">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withMaxAllowedSimplifiedPoints(Long maxAllowedSimplifiedPoints) {
+<span class="fc" id="L151">      this.maxAllowedSimplifiedPoints = maxAllowedSimplifiedPoints;</span>
+
+<span class="fc" id="L153">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withMaxAllowedSpeedKnts(Double maxAllowedSpeedKnts) {
+<span class="fc" id="L157">      this.maxAllowedSpeedKnts = maxAllowedSpeedKnts;</span>
+<span class="fc" id="L158">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withGeometryFactory(GeometryFactory geometryFactory) {
+<span class="fc" id="L162">      this.geometryFactory = geometryFactory;</span>
+<span class="fc" id="L163">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withGeoJsonPrecision(int geoJsonPrecision) {
+<span class="fc" id="L167">      this.geoJsonPrecision = geoJsonPrecision;</span>
+<span class="fc" id="L168">      return this;</span>
+    }
+
+    public Builder&lt;T&gt; withRetainPoints(boolean retainPoints) {
+<span class="fc" id="L172">      this.retainPoints = retainPoints;</span>
+<span class="fc" id="L173">      return this;</span>
+    }
+
+    public BaseRowListenerConfiguration&lt;T&gt; build() {
+<span class="fc" id="L177">      return new BaseRowListenerConfiguration&lt;&gt;(this);</span>
+    }
+  }
+}
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
